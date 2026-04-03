@@ -29,6 +29,13 @@ function saveToHistory(email: string) {
   localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
 }
 
+// Remove email from history
+function removeFromHistory(email: string) {
+  const history = getEmailHistory()
+  const newHistory = history.filter(e => e !== email)
+  localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
+}
+
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>('')
   const [emails, setEmails] = useState<Email[]>([])
@@ -113,6 +120,24 @@ export default function Home() {
     setShowHistory(false)
   }
 
+  const deleteFromHistory = (email: string, e: React.MouseEvent) => {
+    e.stopPropagation() // Prevent switching to email
+    removeFromHistory(email)
+    setEmailHistory(getEmailHistory())
+    // If deleting current email, clear it
+    if (email === emailAddress) {
+      const remaining = getEmailHistory()
+      if (remaining.length > 0) {
+        switchToEmail(remaining[0])
+      } else {
+        setEmailAddress('')
+        localStorage.removeItem('tempmail_address')
+        setEmails([])
+        setSelectedEmail(null)
+      }
+    }
+  }
+
   const createCustomEmail = () => {
     if (!manualInput.trim()) return
     const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -184,20 +209,31 @@ export default function Home() {
             {showHistory && emailHistory.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-50 shadow-2xl max-h-64 overflow-y-auto">
                 {emailHistory.map((historyEmail, index) => (
-                  <button
+                  <div
                     key={index}
-                    onClick={() => switchToEmail(historyEmail)}
-                    className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between border-b border-gray-800 last:border-0 ${
+                    className={`flex items-center border-b border-gray-800 last:border-0 ${
                       historyEmail === emailAddress ? 'bg-purple-900/30' : ''
                     }`}
                   >
-                    <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
-                      {historyEmail}
-                    </span>
-                    {historyEmail === emailAddress && (
-                      <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>
-                    )}
-                  </button>
+                    <button
+                      onClick={(e) => deleteFromHistory(historyEmail, e)}
+                      className="px-3 py-3 text-gray-500 hover:text-red-500 hover:bg-red-900/20 transition-colors"
+                      title="Hapus dari riwayat"
+                    >
+                      🗑️
+                    </button>
+                    <button
+                      onClick={() => switchToEmail(historyEmail)}
+                      className="flex-1 px-2 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
+                    >
+                      <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
+                        {historyEmail}
+                      </span>
+                      {historyEmail === emailAddress && (
+                        <span className="text-xs bg-green-600 px-2 py-0.5 rounded mr-2">Aktif</span>
+                      )}
+                    </button>
+                  </div>
                 ))}
               </div>
             )}
