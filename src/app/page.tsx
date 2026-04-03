@@ -482,19 +482,19 @@ export default function Home() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Header */}
-      <header className="border-b border-gray-700 bg-gray-900/50 backdrop-blur">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-white/5 backdrop-blur-xl">
         <div className="max-w-6xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-white flex items-center gap-2">
-            <span className="text-3xl">📧</span> TempMail
-          </h1>
-          <p className="text-gray-400 text-sm">Email sementara gratis - fdlnstore.com</p>
+          <div className="flex items-center gap-3">
+            <img src="/logo.png" alt="Logo" className="w-10 h-10 object-contain" />
+            <h1 className="text-2xl font-semibold text-white tracking-tight">TempMail FdLnStore</h1>
+          </div>
         </div>
       </header>
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Email Address Card */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 mb-8 border border-gray-700 relative z-20">
-          <p className="text-gray-400 text-sm mb-2">Alamat email sementara Anda:</p>
+        <div className="bg-white/5 backdrop-blur-xl rounded-3xl p-6 mb-8 border border-white/10 relative z-20 shadow-2xl transition-all duration-500 hover:bg-white/[0.07]">
+          <p className="text-white/60 text-sm mb-3 font-medium">Alamat email sementara Anda:</p>
           
           {/* Email Display with Dropdown */}
           <div className="relative mb-4 z-30">
@@ -503,41 +503,41 @@ export default function Home() {
                 onClick={() => {
                   if (emailHistory.length > 0) setShowHistory(!showHistory)
                 }}
-                className="flex-1 bg-gray-900 rounded-xl px-4 py-3 font-mono text-lg text-green-400 border border-gray-600 cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+                className="flex-1 bg-black/30 backdrop-blur-sm rounded-2xl px-5 py-4 font-mono text-lg text-purple-400 border border-white/10 cursor-pointer hover:border-purple-500/50 transition-all duration-300 flex items-center justify-between group"
               >
-                <span>{emailAddress || 'Belum ada email'}</span>
+                <span className="group-hover:text-purple-300 transition-colors">{emailAddress || 'Belum ada email'}</span>
                 {emailHistory.length > 0 && (
-                  <span className={`ml-2 transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+                  <span className={`ml-2 transition-all duration-300 text-white/40 ${showHistory ? 'rotate-180' : ''}`}>▼</span>
                 )}
               </div>
             </div>
             
             {/* History Dropdown */}
             {showHistory && emailHistory.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-50 shadow-2xl max-h-64 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-black/80 backdrop-blur-xl rounded-2xl border border-white/10 overflow-hidden z-50 shadow-2xl max-h-64 overflow-y-auto animate-in fade-in slide-in-from-top-2 duration-200">
                 {emailHistory.map((historyEmail, index) => (
                   <div
                     key={index}
-                    className={`flex items-center border-b border-gray-800 last:border-0 ${
-                      historyEmail === emailAddress ? 'bg-purple-900/30' : ''
+                    className={`flex items-center border-b border-white/5 last:border-0 transition-colors duration-200 ${
+                      historyEmail === emailAddress ? 'bg-purple-500/20' : 'hover:bg-white/5'
                     }`}
                   >
                     <button
                       onClick={(e) => deleteFromHistory(historyEmail, e)}
-                      className="px-3 py-3 text-gray-500 hover:text-red-500 hover:bg-red-900/20 transition-colors"
+                      className="px-4 py-3 text-white/30 hover:text-red-400 hover:bg-red-500/10 transition-all duration-200"
                       title="Hapus dari riwayat"
                     >
                       🗑️
                     </button>
                     <button
                       onClick={() => handleOpenFromHistory(historyEmail)}
-                      className="flex-1 px-2 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
+                      className="flex-1 px-3 py-3 text-left hover:bg-white/5 transition-all duration-200 flex items-center justify-between"
                     >
-                      <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
+                      <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-purple-400' : 'text-white/70'}`}>
                         {historyEmail}
                       </span>
                       {historyEmail === emailAddress && (
-                        <span className="text-xs bg-green-600 px-2 py-0.5 rounded mr-2">Aktif</span>
+                        <span className="text-xs bg-purple-500/30 text-purple-300 px-2 py-0.5 rounded-full mr-2">Aktif</span>
                       )}
                     </button>
                   </div>
@@ -547,42 +547,41 @@ export default function Home() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2 mb-4">
+          <div className="flex flex-wrap gap-3 mb-5">
             <button
               onClick={copyToClipboard}
               disabled={!emailAddress}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none px-6 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-2xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
             >
               {copied ? '✓ Tersalin!' : '📋 Salin'}
             </button>
             <button
               onClick={fetchEmails}
               disabled={!emailAddress || loading}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-gray-600 hover:bg-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              className="flex-1 sm:flex-none px-6 py-3 bg-white/5 hover:bg-white/10 border border-white/10 disabled:cursor-not-allowed text-white rounded-2xl font-medium transition-all duration-300 flex items-center justify-center gap-2 hover:scale-[1.02] active:scale-[0.98]"
             >
               {loading ? '⏳' : '🔄 Refresh'}
             </button>
           </div>
 
           {/* Create/Open Email Section */}
-          <div className="border-t border-gray-700 pt-4">
-            <p className="text-gray-400 text-sm mb-3">Buka atau buat email:</p>
+          <div className="border-t border-white/10 pt-5">
             <div className="flex gap-2">
-              <div className="flex-1 flex items-center bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
+              <div className="flex-1 flex items-center bg-black/30 rounded-2xl border border-white/10 overflow-hidden transition-all duration-300 focus-within:border-purple-500/50 focus-within:bg-black/40">
                 <input
                   type="text"
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
                   onKeyDown={(e) => e.key === 'Enter' && manualInput && handleOpenEmail()}
                   placeholder="ketik nama email..."
-                  className="flex-1 bg-transparent px-4 py-2.5 text-white outline-none font-mono"
+                  className="flex-1 bg-transparent px-5 py-3 text-white outline-none font-mono placeholder:text-white/30"
                 />
-                <span className="text-gray-500 pr-3 text-sm">@fdlnstore.com</span>
+                <span className="text-white/30 pr-4 text-sm">@fdlnstore.com</span>
               </div>
               <button
                 onClick={handleOpenEmail}
                 disabled={!manualInput}
-                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                className="px-5 py-3 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-2xl font-medium transition-all duration-300 hover:scale-105 active:scale-95"
                 title="Buka email yang sudah ada"
               >
                 🔓
@@ -590,35 +589,33 @@ export default function Home() {
               <button
                 onClick={handleCreateCustom}
                 disabled={!manualInput}
-                className="px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                className="px-5 py-3 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-2xl font-medium transition-all duration-300 hover:scale-105 active:scale-95"
                 title="Buat email baru (butuh kode 2FA)"
               >
                 ➕
               </button>
               <button
                 onClick={handleGenerateRandom}
-                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors"
+                className="px-5 py-3 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-white rounded-2xl font-medium transition-all duration-300 hover:scale-105 active:scale-95"
                 title="Generate random baru (butuh kode 2FA)"
               >
                 🎲
               </button>
             </div>
-            <p className="text-gray-500 text-xs mt-2">🔓 Buka = masuk ke email yang sudah ada | ➕ Buat / 🎲 Random = perlu kode 2FA</p>
           </div>
         </div>
 
         {/* 2FA Verification Modal */}
         {modalType === 'verify2fa' && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-600 shadow-2xl">
-              <h3 className="text-xl font-bold text-white mb-2">🔐 Verifikasi 2FA</h3>
-              <p className="text-gray-400 text-sm mb-4">
-                Masukkan 6 digit kode dari Google Authenticator untuk membuat email baru
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900/90 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300">
+              <h3 className="text-xl font-semibold text-white mb-2">🔐 Verifikasi 2FA</h3>
+              <p className="text-white/50 text-sm mb-6">
+                Masukkan 6 digit kode dari Google Authenticator
               </p>
               
-              <div className="space-y-4">
+              <div className="space-y-5">
                 <div>
-                  <label className="text-gray-400 text-sm">Kode 2FA</label>
                   <input
                     type="text"
                     value={totpCode}
@@ -626,26 +623,26 @@ export default function Home() {
                     onKeyDown={(e) => e.key === 'Enter' && totpCode.length === 6 && handleVerify2FA()}
                     placeholder="000000"
                     maxLength={6}
-                    className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white text-center text-2xl font-mono tracking-widest outline-none focus:border-purple-500"
+                    className="w-full bg-black/30 border border-white/10 rounded-2xl px-4 py-4 text-white text-center text-3xl font-mono tracking-[0.5em] outline-none focus:border-purple-500/50 transition-all duration-300"
                     autoFocus
                   />
                 </div>
                 
                 {modalError && (
-                  <p className="text-red-400 text-sm">❌ {modalError}</p>
+                  <p className="text-red-400 text-sm text-center">❌ {modalError}</p>
                 )}
                 
-                <div className="flex gap-2 pt-2">
+                <div className="flex gap-3 pt-2">
                   <button
                     onClick={resetModal}
-                    className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                    className="flex-1 px-4 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleVerify2FA}
                     disabled={totpCode.length !== 6}
-                    className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                    className="flex-1 px-4 py-3.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                   >
                     Verifikasi
                   </button>
@@ -657,53 +654,53 @@ export default function Home() {
 
         {/* Password Modal */}
         {(modalType === 'create' || modalType === 'login' || modalType === 'forgot') && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-600 shadow-2xl">
+          <div className="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-50 p-4 animate-in fade-in duration-200">
+            <div className="bg-gray-900/90 backdrop-blur-xl rounded-3xl p-8 w-full max-w-md border border-white/10 shadow-2xl animate-in zoom-in-95 duration-300">
               {/* Create Email Modal */}
               {modalType === 'create' && (
                 <>
-                  <h3 className="text-xl font-bold text-white mb-2">🔐 Buat Email Baru</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  <h3 className="text-xl font-semibold text-white mb-2">🔐 Buat Email Baru</h3>
+                  <p className="text-white/50 text-sm mb-6">
+                    Email: <span className="text-purple-400 font-mono">{modalEmail}</span>
                   </p>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-gray-400 text-sm">Password</label>
+                      <label className="text-white/50 text-sm">Password</label>
                       <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Minimal 4 karakter"
-                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        className="w-full mt-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-purple-500/50 transition-all duration-300"
                       />
                     </div>
                     <div>
-                      <label className="text-gray-400 text-sm">Konfirmasi Password</label>
+                      <label className="text-white/50 text-sm">Konfirmasi Password</label>
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Ulangi password"
-                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        className="w-full mt-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-purple-500/50 transition-all duration-300"
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                      <p className="text-red-400 text-sm text-center">❌ {modalError}</p>
                     )}
                     
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-3 pt-2">
                       <button
                         onClick={resetModal}
-                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleCreateEmail}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         {modalLoading ? '⏳' : '✓ Buat Email'}
                       </button>
@@ -715,40 +712,40 @@ export default function Home() {
               {/* Login Modal */}
               {modalType === 'login' && (
                 <>
-                  <h3 className="text-xl font-bold text-white mb-2">🔓 Buka Email</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  <h3 className="text-xl font-semibold text-white mb-2">🔓 Buka Email</h3>
+                  <p className="text-white/50 text-sm mb-6">
+                    Email: <span className="text-purple-400 font-mono">{modalEmail}</span>
                   </p>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-gray-400 text-sm">Password</label>
+                      <label className="text-white/50 text-sm">Password</label>
                       <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                         placeholder="Masukkan password"
-                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        className="w-full mt-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-purple-500/50 transition-all duration-300"
                         autoFocus
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                      <p className="text-red-400 text-sm text-center">❌ {modalError}</p>
                     )}
                     
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-3 pt-2">
                       <button
                         onClick={resetModal}
-                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleLogin}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         {modalLoading ? '⏳' : '🔓 Buka'}
                       </button>
@@ -760,7 +757,7 @@ export default function Home() {
                         setPassword('')
                         setModalError('')
                       }}
-                      className="w-full text-center text-sm text-gray-400 hover:text-white transition-colors"
+                      className="w-full text-center text-sm text-white/40 hover:text-white/70 transition-colors duration-200"
                     >
                       Lupa password?
                     </button>
@@ -771,38 +768,38 @@ export default function Home() {
               {/* Forgot Password Modal */}
               {modalType === 'forgot' && (
                 <>
-                  <h3 className="text-xl font-bold text-white mb-2">🔑 Ganti Password</h3>
-                  <p className="text-gray-400 text-sm mb-4">
-                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  <h3 className="text-xl font-semibold text-white mb-2">🔑 Ganti Password</h3>
+                  <p className="text-white/50 text-sm mb-6">
+                    Email: <span className="text-purple-400 font-mono">{modalEmail}</span>
                   </p>
                   
-                  <div className="space-y-4">
+                  <div className="space-y-5">
                     <div>
-                      <label className="text-gray-400 text-sm">Password Lama</label>
+                      <label className="text-white/50 text-sm">Password Lama</label>
                       <input
                         type="password"
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
                         placeholder="Masukkan password lama"
-                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        className="w-full mt-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-purple-500/50 transition-all duration-300"
                       />
                     </div>
                     <div>
-                      <label className="text-gray-400 text-sm">Password Baru</label>
+                      <label className="text-white/50 text-sm">Password Baru</label>
                       <input
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Minimal 4 karakter"
-                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        className="w-full mt-2 bg-black/30 border border-white/10 rounded-2xl px-4 py-3.5 text-white outline-none focus:border-purple-500/50 transition-all duration-300"
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                      <p className="text-red-400 text-sm text-center">❌ {modalError}</p>
                     )}
                     
-                    <div className="flex gap-2 pt-2">
+                    <div className="flex gap-3 pt-2">
                       <button
                         onClick={() => {
                           setModalType('login')
@@ -810,14 +807,14 @@ export default function Home() {
                           setNewPassword('')
                           setModalError('')
                         }}
-                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         Kembali
                       </button>
                       <button
                         onClick={handleForgotPassword}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-3 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                        className="flex-1 px-4 py-3.5 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-2xl font-medium transition-all duration-300"
                       >
                         {modalLoading ? '⏳' : '🔑 Ganti'}
                       </button>
@@ -832,18 +829,18 @@ export default function Home() {
         {/* Main Content Grid */}
         <div className="grid md:grid-cols-3 gap-6">
           {/* Inbox List */}
-          <div className="md:col-span-1 bg-gray-800/50 backdrop-blur rounded-2xl border border-gray-700 overflow-hidden">
-            <div className="p-4 border-b border-gray-700 flex items-center justify-between">
+          <div className="md:col-span-1 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden transition-all duration-500 hover:bg-white/[0.07]">
+            <div className="p-5 border-b border-white/10 flex items-center justify-between">
               <h2 className="font-semibold text-white flex items-center gap-2">
                 📥 Inbox
-                <span className="bg-purple-600 text-xs px-2 py-0.5 rounded-full">
+                <span className="bg-purple-500/30 text-purple-300 text-xs px-2.5 py-1 rounded-full">
                   {emails.length}
                 </span>
               </h2>
               <button
                 onClick={fetchEmails}
                 disabled={loading}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-white/40 hover:text-white transition-all duration-200 hover:scale-110"
               >
                 {loading ? '⏳' : '🔄'}
               </button>
@@ -851,27 +848,27 @@ export default function Home() {
             
             <div className="max-h-96 overflow-y-auto">
               {emails.length === 0 ? (
-                <div className="p-8 text-center text-gray-500">
-                  <p className="text-4xl mb-2">📭</p>
-                  <p>Belum ada email</p>
-                  <p className="text-sm mt-1">Email akan muncul otomatis</p>
+                <div className="p-10 text-center text-white/40">
+                  <p className="text-5xl mb-3">📭</p>
+                  <p className="font-medium">Belum ada email</p>
+                  <p className="text-sm mt-1 text-white/30">Email akan muncul otomatis</p>
                 </div>
               ) : (
                 emails.map((email) => (
                   <button
                     key={email.id}
                     onClick={() => setSelectedEmail(email)}
-                    className={`w-full p-4 text-left border-b border-gray-700 hover:bg-gray-700/50 transition-colors ${
-                      selectedEmail?.id === email.id ? 'bg-purple-900/30' : ''
+                    className={`w-full p-4 text-left border-b border-white/5 hover:bg-white/5 transition-all duration-200 ${
+                      selectedEmail?.id === email.id ? 'bg-purple-500/20' : ''
                     }`}
                   >
                     <p className="font-medium text-white truncate">
                       {email.from_address}
                     </p>
-                    <p className="text-sm text-gray-300 truncate">
+                    <p className="text-sm text-white/60 truncate">
                       {email.subject || '(Tanpa subjek)'}
                     </p>
-                    <p className="text-xs text-gray-500 mt-1">
+                    <p className="text-xs text-white/30 mt-1">
                       {formatDate(email.created_at)}
                     </p>
                   </button>
@@ -881,59 +878,48 @@ export default function Home() {
           </div>
 
           {/* Email Detail */}
-          <div className="md:col-span-2 bg-gray-800/50 backdrop-blur rounded-2xl border border-gray-700 overflow-hidden">
+          <div className="md:col-span-2 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 overflow-hidden transition-all duration-500 hover:bg-white/[0.07]">
             {selectedEmail ? (
               <>
-                <div className="p-4 border-b border-gray-700">
+                <div className="p-5 border-b border-white/10">
                   <h3 className="font-semibold text-white text-lg">
                     {selectedEmail.subject || '(Tanpa subjek)'}
                   </h3>
-                  <div className="mt-2 text-sm text-gray-400">
-                    <p><span className="text-gray-500">Dari:</span> {selectedEmail.from_address}</p>
-                    <p><span className="text-gray-500">Kepada:</span> {selectedEmail.to_address}</p>
-                    <p><span className="text-gray-500">Waktu:</span> {formatDate(selectedEmail.created_at)}</p>
+                  <div className="mt-3 text-sm text-white/50 space-y-1">
+                    <p><span className="text-white/30">Dari:</span> {selectedEmail.from_address}</p>
+                    <p><span className="text-white/30">Kepada:</span> {selectedEmail.to_address}</p>
+                    <p><span className="text-white/30">Waktu:</span> {formatDate(selectedEmail.created_at)}</p>
                   </div>
                 </div>
-                <div className="p-4">
+                <div className="p-5">
                   {selectedEmail.body_html ? (
                     <div
-                      className="prose prose-invert max-w-none bg-white rounded-lg p-4"
+                      className="prose prose-invert max-w-none bg-white rounded-2xl p-5"
                       dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }}
                       style={{ color: 'black' }}
                     />
                   ) : (
-                    <pre className="whitespace-pre-wrap text-gray-300 font-sans">
+                    <pre className="whitespace-pre-wrap text-white/70 font-sans">
                       {selectedEmail.body_text || '(Email kosong)'}
                     </pre>
                   )}
                 </div>
               </>
             ) : (
-              <div className="h-full flex items-center justify-center p-8 text-center text-gray-500 min-h-64">
+              <div className="h-full flex items-center justify-center p-10 text-center text-white/30 min-h-64">
                 <div>
-                  <p className="text-5xl mb-4">✉️</p>
-                  <p>Pilih email untuk membaca</p>
+                  <p className="text-6xl mb-4">✉️</p>
+                  <p className="font-medium">Pilih email untuk membaca</p>
                 </div>
               </div>
             )}
           </div>
         </div>
-
-        {/* Info Section */}
-        <div className="mt-8 bg-gray-800/30 rounded-2xl p-6 border border-gray-700">
-          <h2 className="font-semibold text-white mb-4">ℹ️ Cara Pakai</h2>
-          <ol className="list-decimal list-inside space-y-2 text-gray-300">
-            <li>Salin alamat email di atas</li>
-            <li>Gunakan untuk daftar di website/aplikasi</li>
-            <li>Email masuk akan muncul otomatis di inbox</li>
-            <li>Klik tombol &quot;Baru&quot; untuk generate alamat baru</li>
-          </ol>
-        </div>
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-gray-700 mt-8 py-6 text-center text-gray-500 text-sm">
-        <p>© 2024 TempMail - fdlnstore.com</p>
+      <footer className="border-t border-white/10 mt-8 py-6 text-center text-white/30 text-sm">
+        <p>© 2024 TempMail FdLnStore</p>
       </footer>
     </div>
   )
