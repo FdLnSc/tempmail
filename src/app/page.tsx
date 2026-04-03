@@ -13,21 +13,41 @@ function generateEmailAddress(): string {
   return `${result}@fdlnstore.com`
 }
 
+// Get email history from localStorage
+function getEmailHistory(): string[] {
+  if (typeof window === 'undefined') return []
+  const history = localStorage.getItem('tempmail_history')
+  return history ? JSON.parse(history) : []
+}
+
+// Save email to history
+function saveToHistory(email: string) {
+  const history = getEmailHistory()
+  if (!history.includes(email)) {
+    const newHistory = [email, ...history].slice(0, 10) // Keep max 10 emails
+    localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
+  }
+}
+
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>('')
   const [emails, setEmails] = useState<Email[]>([])
   const [selectedEmail, setSelectedEmail] = useState<Email | null>(null)
   const [copied, setCopied] = useState(false)
   const [loading, setLoading] = useState(false)
+  const [showHistory, setShowHistory] = useState(false)
+  const [emailHistory, setEmailHistory] = useState<string[]>([])
 
   // Generate new email on first load
   useEffect(() => {
     const stored = localStorage.getItem('tempmail_address')
     if (stored) {
       setEmailAddress(stored)
+      saveToHistory(stored)
     } else {
       generateNewEmail()
     }
+    setEmailHistory(getEmailHistory())
   }, [])
 
   // Fetch emails when address changes
@@ -76,8 +96,18 @@ export default function Home() {
     const newEmail = generateEmailAddress()
     setEmailAddress(newEmail)
     localStorage.setItem('tempmail_address', newEmail)
+    saveToHistory(newEmail)
+    setEmailHistory(getEmailHistory())
     setEmails([])
     setSelectedEmail(null)
+  }
+
+  const switchToEmail = (email: string) => {
+    setEmailAddress(email)
+    localStorage.setItem('tempmail_address', email)
+    setEmails([])
+    setSelectedEmail(null)
+    setShowHistory(false)
   }
 
   const copyToClipboard = async () => {
@@ -130,8 +160,33 @@ export default function Home() {
               >
                 🔄 Baru
               </button>
+              <button
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex-1 sm:flex-none px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              >
+                📜 Riwayat
+              </button>
             </div>
           </div>
+          
+          {/* Email History Dropdown */}
+          {showHistory && emailHistory.length > 0 && (
+            <div className="mt-4 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
+              <p className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">Email Sebelumnya:</p>
+              {emailHistory.map((historyEmail, index) => (
+                <button
+                  key={index}
+                  onClick={() => switchToEmail(historyEmail)}
+                  className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between ${
+                    historyEmail === emailAddress ? 'bg-purple-900/30 text-green-400' : 'text-gray-300'
+                  }`}
+                >
+                  <span className="font-mono text-sm">{historyEmail}</span>
+                  {historyEmail === emailAddress && <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>}
+                </button>
+              ))}
+            </div>
+          )}
         </div>
 
         {/* Main Content Grid */}
