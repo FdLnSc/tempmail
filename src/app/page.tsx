@@ -69,6 +69,27 @@ function removeFromHistory(email: string) {
 // Modal types
 type ModalType = 'none' | 'create' | 'login' | 'forgot' | 'verify2fa'
 
+// Get authenticated emails from sessionStorage
+function getAuthenticatedEmails(): string[] {
+  if (typeof window === 'undefined') return []
+  const auth = sessionStorage.getItem('tempmail_authenticated')
+  return auth ? JSON.parse(auth) : []
+}
+
+// Save email as authenticated in session
+function saveAsAuthenticated(email: string) {
+  const authenticated = getAuthenticatedEmails()
+  if (!authenticated.includes(email)) {
+    authenticated.push(email)
+    sessionStorage.setItem('tempmail_authenticated', JSON.stringify(authenticated))
+  }
+}
+
+// Check if email is already authenticated
+function isAuthenticated(email: string): boolean {
+  return getAuthenticatedEmails().includes(email)
+}
+
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>('')
   const [emails, setEmails] = useState<Email[]>([])
@@ -253,6 +274,7 @@ export default function Home() {
       setEmailAddress(modalEmail)
       localStorage.setItem('tempmail_address', modalEmail)
       saveToHistory(modalEmail)
+      saveAsAuthenticated(modalEmail)
       setEmailHistory(getEmailHistory())
       setEmails([])
       setSelectedEmail(null)
@@ -296,6 +318,7 @@ export default function Home() {
       setEmailAddress(modalEmail)
       localStorage.setItem('tempmail_address', modalEmail)
       saveToHistory(modalEmail)
+      saveAsAuthenticated(modalEmail)
       setEmailHistory(getEmailHistory())
       setEmails([])
       setSelectedEmail(null)
@@ -421,10 +444,16 @@ export default function Home() {
     }
   }
 
-  // Open email from history
+  // Open email from history - skip password if already authenticated
   const handleOpenFromHistory = (email: string) => {
-    openLoginModal(email)
-    setShowHistory(false)
+    if (isAuthenticated(email)) {
+      // Already authenticated in this session, switch directly
+      switchToEmail(email)
+    } else {
+      // Need to login
+      openLoginModal(email)
+      setShowHistory(false)
+    }
   }
 
   const switchToEmail = (email: string) => {
