@@ -2,6 +2,28 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Email } from '@/lib/supabase'
+import * as OTPAuth from 'otpauth'
+
+// TOTP Secret for admin verification
+const TOTP_SECRET = '3XRVZR74ZPVUHSGYLLP7Z5ABJFXVZCJ5'
+
+// Verify TOTP code
+function verifyTOTP(code: string): boolean {
+  try {
+    const totp = new OTPAuth.TOTP({
+      issuer: 'TempMail',
+      label: 'Admin',
+      algorithm: 'SHA1',
+      digits: 6,
+      period: 30,
+      secret: TOTP_SECRET
+    })
+    const delta = totp.validate({ token: code, window: 1 })
+    return delta !== null
+  } catch {
+    return false
+  }
+}
 
 // Simple hash function for password (client-side)
 async function hashPassword(password: string): Promise<string> {
@@ -45,7 +67,7 @@ function removeFromHistory(email: string) {
 }
 
 // Modal types
-type ModalType = 'none' | 'create' | 'login' | 'forgot'
+type ModalType = 'none' | 'create' | 'login' | 'forgot' | 'verify2fa'
 
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>('')
@@ -61,6 +83,8 @@ export default function Home() {
   const [modalType, setModalType] = useState<ModalType>('none')
   const [modalEmail, setModalEmail] = useState('')
   const [password, setPassword] = useState('')
+  const [totpCode, setTotpCode] = useState('')
+  const [pendingAction, setPendingAction] = useState<'random' | 'custom' | null>(null)
   const [confirmPassword, setConfirmPassword] = useState('')
   const [oldPassword, setOldPassword] = useState('')
   const [newPassword, setNewPassword] = useState('')
@@ -128,6 +152,48 @@ export default function Home() {
     setNewPassword('')
     setModalError('')
     setModalLoading(false)
+    setTotpCode('')
+    setPendingAction(null)
+  }
+
+  // Open 2FA verification modal
+  const open2FAModal = (action: 'random' | 'custom') => {
+    setPendingAction(action)
+    setTotpCode('')
+    setModalError('')
+    setModalType('verify2fa')
+  }
+
+  // Verify 2FA and proceed
+  const handleVerify2FA = () => {
+    if (!totpCode || totpCode.length !== 6) {
+      setModalError('Masukkan 6 digit kode')
+      return
+    }
+    
+    if (!verifyTOTP(totpCode)) {
+      setModalError('Kode tidak valid atau sudah expired')
+      return
+    }
+    
+    // 2FA valid - proceed with action
+    if (pendingAction === 'random') {
+      const newEmail = generateEmailAddress()
+      setModalEmail(newEmail)
+      setModalType('create')
+      setModalError('')
+      setTotpCode('')
+    } else if (pendingAction === 'custom') {
+      const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+      if (prefix) {
+        const fullEmail = `${prefix}@fdlnstore.com`
+        setModalEmail(fullEmail)
+        setModalType('create')
+        setModalError('')
+        setTotpCode('')
+        setManualInput('')
+      }
+    }
   }
 
   // Open create email modal (for new email with password)
@@ -300,13 +366,12 @@ export default function Home() {
     }
   }
 
-  // Generate random and open create modal
+  // Generate random - needs 2FA
   const handleGenerateRandom = () => {
-    const newEmail = generateEmailAddress()
-    openCreateModal(newEmail)
+    open2FAModal('random')
   }
 
-  // Create custom email and open create modal
+  // Create custom email - check if exists first
   const handleCreateCustom = async () => {
     if (!manualInput.trim()) return
     const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
@@ -323,11 +388,37 @@ export default function Home() {
     if (existing) {
       // Email exists, open login
       openLoginModal(fullEmail)
+      setManualInput('')
     } else {
-      // New email, open create
-      openCreateModal(fullEmail)
+      // New email - needs 2FA first
+      open2FAModal('custom')
     }
-    setManualInput('')
+  }
+
+  // Open email (buka existing email)
+  const handleOpenEmail = async () => {
+    if (!manualInput.trim()) return
+    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (!prefix) return
+    const fullEmail = `${prefix}@fdlnstore.com`
+    
+    // Check if exists
+    const { data: existing } = await supabase
+      .from('email_accounts')
+      .select('email_address')
+      .eq('email_address', fullEmail)
+      .single()
+
+    if (existing) {
+      openLoginModal(fullEmail)
+      setManualInput('')
+    } else {
+      // Email doesn't exist
+      setModalEmail(fullEmail)
+      setModalError('Email tidak ditemukan')
+      setModalType('login')
+      setManualInput('')
+    }
   }
 
   // Open email from history
@@ -475,40 +566,97 @@ export default function Home() {
 
           {/* Create/Open Email Section */}
           <div className="border-t border-gray-700 pt-4">
-            <p className="text-gray-400 text-sm mb-3">Buat atau buka email:</p>
+            <p className="text-gray-400 text-sm mb-3">Buka atau buat email:</p>
             <div className="flex gap-2">
               <div className="flex-1 flex items-center bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
                 <input
                   type="text"
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                  onKeyDown={(e) => e.key === 'Enter' && manualInput && handleCreateCustom()}
+                  onKeyDown={(e) => e.key === 'Enter' && manualInput && handleOpenEmail()}
                   placeholder="ketik nama email..."
                   className="flex-1 bg-transparent px-4 py-2.5 text-white outline-none font-mono"
                 />
                 <span className="text-gray-500 pr-3 text-sm">@fdlnstore.com</span>
               </div>
               <button
-                onClick={handleCreateCustom}
+                onClick={handleOpenEmail}
                 disabled={!manualInput}
                 className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
-                title="Buka/Buat email"
+                title="Buka email yang sudah ada"
               >
                 🔓
               </button>
               <button
+                onClick={handleCreateCustom}
+                disabled={!manualInput}
+                className="px-4 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                title="Buat email baru (butuh kode 2FA)"
+              >
+                ➕
+              </button>
+              <button
                 onClick={handleGenerateRandom}
                 className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors"
-                title="Generate random baru"
+                title="Generate random baru (butuh kode 2FA)"
               >
                 🎲
               </button>
             </div>
+            <p className="text-gray-500 text-xs mt-2">🔓 Buka = masuk ke email yang sudah ada | ➕ Buat / 🎲 Random = perlu kode 2FA</p>
           </div>
         </div>
 
+        {/* 2FA Verification Modal */}
+        {modalType === 'verify2fa' && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-600 shadow-2xl">
+              <h3 className="text-xl font-bold text-white mb-2">🔐 Verifikasi 2FA</h3>
+              <p className="text-gray-400 text-sm mb-4">
+                Masukkan 6 digit kode dari Google Authenticator untuk membuat email baru
+              </p>
+              
+              <div className="space-y-4">
+                <div>
+                  <label className="text-gray-400 text-sm">Kode 2FA</label>
+                  <input
+                    type="text"
+                    value={totpCode}
+                    onChange={(e) => setTotpCode(e.target.value.replace(/[^0-9]/g, '').slice(0, 6))}
+                    onKeyDown={(e) => e.key === 'Enter' && totpCode.length === 6 && handleVerify2FA()}
+                    placeholder="000000"
+                    maxLength={6}
+                    className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white text-center text-2xl font-mono tracking-widest outline-none focus:border-purple-500"
+                    autoFocus
+                  />
+                </div>
+                
+                {modalError && (
+                  <p className="text-red-400 text-sm">❌ {modalError}</p>
+                )}
+                
+                <div className="flex gap-2 pt-2">
+                  <button
+                    onClick={resetModal}
+                    className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                  >
+                    Batal
+                  </button>
+                  <button
+                    onClick={handleVerify2FA}
+                    disabled={totpCode.length !== 6}
+                    className="flex-1 px-4 py-3 bg-purple-600 hover:bg-purple-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                  >
+                    Verifikasi
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
         {/* Password Modal */}
-        {modalType !== 'none' && (
+        {(modalType === 'create' || modalType === 'login' || modalType === 'forgot') && (
           <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
             <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-600 shadow-2xl">
               {/* Create Email Modal */}
