@@ -3,6 +3,15 @@
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Email } from '@/lib/supabase'
 
+// Simple hash function for password (client-side)
+async function hashPassword(password: string): Promise<string> {
+  const encoder = new TextEncoder()
+  const data = encoder.encode(password)
+  const hashBuffer = await crypto.subtle.digest('SHA-256', data)
+  const hashArray = Array.from(new Uint8Array(hashBuffer))
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
+}
+
 // Generate random email address
 function generateEmailAddress(): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -23,9 +32,8 @@ function getEmailHistory(): string[] {
 // Save email to history
 function saveToHistory(email: string) {
   const history = getEmailHistory()
-  // Remove if already exists, then add to front
   const filtered = history.filter(e => e !== email)
-  const newHistory = [email, ...filtered].slice(0, 20) // Keep max 20 emails
+  const newHistory = [email, ...filtered].slice(0, 20)
   localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
 }
 
@@ -36,6 +44,9 @@ function removeFromHistory(email: string) {
   localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
 }
 
+// Modal types
+type ModalType = 'none' | 'create' | 'login' | 'forgot'
+
 export default function Home() {
   const [emailAddress, setEmailAddress] = useState<string>('')
   const [emails, setEmails] = useState<Email[]>([])
@@ -45,15 +56,22 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false)
   const [emailHistory, setEmailHistory] = useState<string[]>([])
   const [manualInput, setManualInput] = useState('')
+  
+  // Modal states
+  const [modalType, setModalType] = useState<ModalType>('none')
+  const [modalEmail, setModalEmail] = useState('')
+  const [password, setPassword] = useState('')
+  const [confirmPassword, setConfirmPassword] = useState('')
+  const [oldPassword, setOldPassword] = useState('')
+  const [newPassword, setNewPassword] = useState('')
+  const [modalError, setModalError] = useState('')
+  const [modalLoading, setModalLoading] = useState(false)
 
   // Generate new email on first load
   useEffect(() => {
     const stored = localStorage.getItem('tempmail_address')
     if (stored) {
       setEmailAddress(stored)
-      saveToHistory(stored)
-    } else {
-      generateNewEmail()
     }
     setEmailHistory(getEmailHistory())
   }, [])
@@ -100,14 +118,222 @@ export default function Home() {
     }
   }, [emailAddress, fetchEmails])
 
-  const generateNewEmail = () => {
+  // Reset modal state
+  const resetModal = () => {
+    setModalType('none')
+    setModalEmail('')
+    setPassword('')
+    setConfirmPassword('')
+    setOldPassword('')
+    setNewPassword('')
+    setModalError('')
+    setModalLoading(false)
+  }
+
+  // Open create email modal (for new email with password)
+  const openCreateModal = (email: string) => {
+    setModalEmail(email)
+    setModalType('create')
+    setModalError('')
+  }
+
+  // Open login modal (for existing email)
+  const openLoginModal = (email: string) => {
+    setModalEmail(email)
+    setModalType('login')
+    setModalError('')
+  }
+
+  // Handle create new email with password
+  const handleCreateEmail = async () => {
+    if (!password || password.length < 4) {
+      setModalError('Password minimal 4 karakter')
+      return
+    }
+    if (password !== confirmPassword) {
+      setModalError('Password tidak cocok')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      const hash = await hashPassword(password)
+      
+      // Check if email already exists
+      const { data: existing } = await supabase
+        .from('email_accounts')
+        .select('email_address')
+        .eq('email_address', modalEmail)
+        .single()
+
+      if (existing) {
+        setModalError('Email sudah digunakan, silakan buka dengan password')
+        setModalLoading(false)
+        return
+      }
+
+      // Create new account
+      const { error } = await supabase
+        .from('email_accounts')
+        .insert({ email_address: modalEmail, password_hash: hash })
+
+      if (error) {
+        setModalError('Gagal membuat email: ' + error.message)
+        setModalLoading(false)
+        return
+      }
+
+      // Success - set as active email
+      setEmailAddress(modalEmail)
+      localStorage.setItem('tempmail_address', modalEmail)
+      saveToHistory(modalEmail)
+      setEmailHistory(getEmailHistory())
+      setEmails([])
+      setSelectedEmail(null)
+      resetModal()
+    } catch {
+      setModalError('Terjadi kesalahan')
+      setModalLoading(false)
+    }
+  }
+
+  // Handle login to existing email
+  const handleLogin = async () => {
+    if (!password) {
+      setModalError('Masukkan password')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      const hash = await hashPassword(password)
+      
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .select('password_hash')
+        .eq('email_address', modalEmail)
+        .single()
+
+      if (error || !data) {
+        setModalError('Email tidak ditemukan')
+        setModalLoading(false)
+        return
+      }
+
+      if (data.password_hash !== hash) {
+        setModalError('Password salah')
+        setModalLoading(false)
+        return
+      }
+
+      // Success - set as active email
+      setEmailAddress(modalEmail)
+      localStorage.setItem('tempmail_address', modalEmail)
+      saveToHistory(modalEmail)
+      setEmailHistory(getEmailHistory())
+      setEmails([])
+      setSelectedEmail(null)
+      resetModal()
+    } catch {
+      setModalError('Terjadi kesalahan')
+      setModalLoading(false)
+    }
+  }
+
+  // Handle forgot password
+  const handleForgotPassword = async () => {
+    if (!oldPassword) {
+      setModalError('Masukkan password lama')
+      return
+    }
+    if (!newPassword || newPassword.length < 4) {
+      setModalError('Password baru minimal 4 karakter')
+      return
+    }
+
+    setModalLoading(true)
+    try {
+      const oldHash = await hashPassword(oldPassword)
+      const newHash = await hashPassword(newPassword)
+      
+      // Verify old password
+      const { data, error } = await supabase
+        .from('email_accounts')
+        .select('password_hash')
+        .eq('email_address', modalEmail)
+        .single()
+
+      if (error || !data) {
+        setModalError('Email tidak ditemukan')
+        setModalLoading(false)
+        return
+      }
+
+      if (data.password_hash !== oldHash) {
+        setModalError('Password lama salah')
+        setModalLoading(false)
+        return
+      }
+
+      // Update password
+      const { error: updateError } = await supabase
+        .from('email_accounts')
+        .update({ password_hash: newHash })
+        .eq('email_address', modalEmail)
+
+      if (updateError) {
+        setModalError('Gagal mengubah password')
+        setModalLoading(false)
+        return
+      }
+
+      // Success - go back to login
+      setModalType('login')
+      setPassword('')
+      setOldPassword('')
+      setNewPassword('')
+      setModalError('')
+      setModalLoading(false)
+    } catch {
+      setModalError('Terjadi kesalahan')
+      setModalLoading(false)
+    }
+  }
+
+  // Generate random and open create modal
+  const handleGenerateRandom = () => {
     const newEmail = generateEmailAddress()
-    setEmailAddress(newEmail)
-    localStorage.setItem('tempmail_address', newEmail)
-    saveToHistory(newEmail)
-    setEmailHistory(getEmailHistory())
-    setEmails([])
-    setSelectedEmail(null)
+    openCreateModal(newEmail)
+  }
+
+  // Create custom email and open create modal
+  const handleCreateCustom = async () => {
+    if (!manualInput.trim()) return
+    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    if (!prefix) return
+    const fullEmail = `${prefix}@fdlnstore.com`
+    
+    // Check if exists
+    const { data: existing } = await supabase
+      .from('email_accounts')
+      .select('email_address')
+      .eq('email_address', fullEmail)
+      .single()
+
+    if (existing) {
+      // Email exists, open login
+      openLoginModal(fullEmail)
+    } else {
+      // New email, open create
+      openCreateModal(fullEmail)
+    }
+    setManualInput('')
+  }
+
+  // Open email from history
+  const handleOpenFromHistory = (email: string) => {
+    openLoginModal(email)
+    setShowHistory(false)
   }
 
   const switchToEmail = (email: string) => {
@@ -128,7 +354,11 @@ export default function Home() {
     if (email === emailAddress) {
       const remaining = getEmailHistory()
       if (remaining.length > 0) {
-        switchToEmail(remaining[0])
+        // Don't auto-switch, just clear current
+        setEmailAddress('')
+        localStorage.removeItem('tempmail_address')
+        setEmails([])
+        setSelectedEmail(null)
       } else {
         setEmailAddress('')
         localStorage.removeItem('tempmail_address')
@@ -136,20 +366,6 @@ export default function Home() {
         setSelectedEmail(null)
       }
     }
-  }
-
-  const createCustomEmail = () => {
-    if (!manualInput.trim()) return
-    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
-    if (!prefix) return
-    const fullEmail = `${prefix}@fdlnstore.com`
-    setEmailAddress(fullEmail)
-    localStorage.setItem('tempmail_address', fullEmail)
-    saveToHistory(fullEmail)
-    setEmailHistory(getEmailHistory())
-    setEmails([])
-    setSelectedEmail(null)
-    setManualInput('')
   }
 
   const copyToClipboard = async () => {
@@ -223,7 +439,7 @@ export default function Home() {
                       🗑️
                     </button>
                     <button
-                      onClick={() => switchToEmail(historyEmail)}
+                      onClick={() => handleOpenFromHistory(historyEmail)}
                       className="flex-1 px-2 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between"
                     >
                       <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
@@ -257,39 +473,213 @@ export default function Home() {
             </button>
           </div>
 
-          {/* Create New Email Section */}
+          {/* Create/Open Email Section */}
           <div className="border-t border-gray-700 pt-4">
-            <p className="text-gray-400 text-sm mb-3">Buat email baru:</p>
+            <p className="text-gray-400 text-sm mb-3">Buat atau buka email:</p>
             <div className="flex gap-2">
               <div className="flex-1 flex items-center bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
                 <input
                   type="text"
                   value={manualInput}
                   onChange={(e) => setManualInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                  onKeyDown={(e) => e.key === 'Enter' && manualInput && createCustomEmail()}
+                  onKeyDown={(e) => e.key === 'Enter' && manualInput && handleCreateCustom()}
                   placeholder="ketik nama email..."
                   className="flex-1 bg-transparent px-4 py-2.5 text-white outline-none font-mono"
                 />
                 <span className="text-gray-500 pr-3 text-sm">@fdlnstore.com</span>
               </div>
               <button
-                onClick={createCustomEmail}
+                onClick={handleCreateCustom}
                 disabled={!manualInput}
                 className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
-                title="Buat dengan nama custom"
+                title="Buka/Buat email"
               >
-                ➕
+                🔓
               </button>
               <button
-                onClick={generateNewEmail}
+                onClick={handleGenerateRandom}
                 className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors"
-                title="Generate random"
+                title="Generate random baru"
               >
                 🎲
               </button>
             </div>
           </div>
         </div>
+
+        {/* Password Modal */}
+        {modalType !== 'none' && (
+          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+            <div className="bg-gray-800 rounded-2xl p-6 w-full max-w-md border border-gray-600 shadow-2xl">
+              {/* Create Email Modal */}
+              {modalType === 'create' && (
+                <>
+                  <h3 className="text-xl font-bold text-white mb-2">🔐 Buat Email Baru</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-gray-400 text-sm">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        placeholder="Minimal 4 karakter"
+                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Konfirmasi Password</label>
+                      <input
+                        type="password"
+                        value={confirmPassword}
+                        onChange={(e) => setConfirmPassword(e.target.value)}
+                        placeholder="Ulangi password"
+                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    
+                    {modalError && (
+                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                    )}
+                    
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={resetModal}
+                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={handleCreateEmail}
+                        disabled={modalLoading}
+                        className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                      >
+                        {modalLoading ? '⏳' : '✓ Buat Email'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+
+              {/* Login Modal */}
+              {modalType === 'login' && (
+                <>
+                  <h3 className="text-xl font-bold text-white mb-2">🔓 Buka Email</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-gray-400 text-sm">Password</label>
+                      <input
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
+                        placeholder="Masukkan password"
+                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    {modalError && (
+                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                    )}
+                    
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={resetModal}
+                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                      >
+                        Batal
+                      </button>
+                      <button
+                        onClick={handleLogin}
+                        disabled={modalLoading}
+                        className="flex-1 px-4 py-3 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                      >
+                        {modalLoading ? '⏳' : '🔓 Buka'}
+                      </button>
+                    </div>
+                    
+                    <button
+                      onClick={() => {
+                        setModalType('forgot')
+                        setPassword('')
+                        setModalError('')
+                      }}
+                      className="w-full text-center text-sm text-gray-400 hover:text-white transition-colors"
+                    >
+                      Lupa password?
+                    </button>
+                  </div>
+                </>
+              )}
+
+              {/* Forgot Password Modal */}
+              {modalType === 'forgot' && (
+                <>
+                  <h3 className="text-xl font-bold text-white mb-2">🔑 Ganti Password</h3>
+                  <p className="text-gray-400 text-sm mb-4">
+                    Email: <span className="text-green-400 font-mono">{modalEmail}</span>
+                  </p>
+                  
+                  <div className="space-y-4">
+                    <div>
+                      <label className="text-gray-400 text-sm">Password Lama</label>
+                      <input
+                        type="password"
+                        value={oldPassword}
+                        onChange={(e) => setOldPassword(e.target.value)}
+                        placeholder="Masukkan password lama"
+                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-gray-400 text-sm">Password Baru</label>
+                      <input
+                        type="password"
+                        value={newPassword}
+                        onChange={(e) => setNewPassword(e.target.value)}
+                        placeholder="Minimal 4 karakter"
+                        className="w-full mt-1 bg-gray-900 border border-gray-600 rounded-xl px-4 py-3 text-white outline-none focus:border-purple-500"
+                      />
+                    </div>
+                    
+                    {modalError && (
+                      <p className="text-red-400 text-sm">❌ {modalError}</p>
+                    )}
+                    
+                    <div className="flex gap-2 pt-2">
+                      <button
+                        onClick={() => {
+                          setModalType('login')
+                          setOldPassword('')
+                          setNewPassword('')
+                          setModalError('')
+                        }}
+                        className="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors"
+                      >
+                        Kembali
+                      </button>
+                      <button
+                        onClick={handleForgotPassword}
+                        disabled={modalLoading}
+                        className="flex-1 px-4 py-3 bg-orange-600 hover:bg-orange-500 disabled:bg-gray-600 text-white rounded-xl font-medium transition-colors"
+                      >
+                        {modalLoading ? '⏳' : '🔑 Ganti'}
+                      </button>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Main Content Grid */}
         <div className="grid md:grid-cols-3 gap-6">
