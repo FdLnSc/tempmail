@@ -176,7 +176,7 @@ export default function Home() {
             
             {/* History Dropdown */}
             {showHistory && (
-              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-10 shadow-xl max-h-64 overflow-y-auto">
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-50 shadow-2xl max-h-64 overflow-y-auto">
                 {emailHistory.length > 0 ? (
                   emailHistory.map((historyEmail, index) => (
                     <button
