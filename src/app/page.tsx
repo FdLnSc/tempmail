@@ -23,10 +23,10 @@ function getEmailHistory(): string[] {
 // Save email to history
 function saveToHistory(email: string) {
   const history = getEmailHistory()
-  if (!history.includes(email)) {
-    const newHistory = [email, ...history].slice(0, 10) // Keep max 10 emails
-    localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
-  }
+  // Remove if already exists, then add to front
+  const filtered = history.filter(e => e !== email)
+  const newHistory = [email, ...filtered].slice(0, 20) // Keep max 20 emails
+  localStorage.setItem('tempmail_history', JSON.stringify(newHistory))
 }
 
 export default function Home() {
@@ -37,6 +37,8 @@ export default function Home() {
   const [loading, setLoading] = useState(false)
   const [showHistory, setShowHistory] = useState(false)
   const [emailHistory, setEmailHistory] = useState<string[]>([])
+  const [manualInput, setManualInput] = useState('')
+  const [showManualInput, setShowManualInput] = useState(false)
 
   // Generate new email on first load
   useEffect(() => {
@@ -105,9 +107,22 @@ export default function Home() {
   const switchToEmail = (email: string) => {
     setEmailAddress(email)
     localStorage.setItem('tempmail_address', email)
+    saveToHistory(email)
+    setEmailHistory(getEmailHistory())
     setEmails([])
     setSelectedEmail(null)
     setShowHistory(false)
+  }
+
+  const openManualEmail = () => {
+    if (!manualInput.trim()) return
+    // Remove any @domain if user typed it
+    const prefix = manualInput.trim().replace(/@.*$/, '').toLowerCase()
+    if (!prefix) return
+    const fullEmail = `${prefix}@fdlnstore.com`
+    switchToEmail(fullEmail)
+    setManualInput('')
+    setShowManualInput(false)
   }
 
   const copyToClipboard = async () => {
@@ -127,6 +142,9 @@ export default function Home() {
     })
   }
 
+  // Extract prefix from email for display
+  const emailPrefix = emailAddress.replace('@fdlnstore.com', '')
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
       {/* Header */}
@@ -143,48 +161,88 @@ export default function Home() {
         {/* Email Address Card */}
         <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 mb-8 border border-gray-700">
           <p className="text-gray-400 text-sm mb-2">Alamat email sementara Anda:</p>
-          <div className="flex flex-col sm:flex-row gap-4 items-stretch sm:items-center">
-            <div className="flex-1 bg-gray-900 rounded-xl px-4 py-3 font-mono text-lg text-green-400 border border-gray-600">
-              {emailAddress || 'Generating...'}
-            </div>
-            <div className="flex gap-2">
-              <button
-                onClick={copyToClipboard}
-                className="flex-1 sm:flex-none px-6 py-3 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                {copied ? '✓ Tersalin!' : '📋 Salin'}
-              </button>
-              <button
-                onClick={generateNewEmail}
-                className="flex-1 sm:flex-none px-6 py-3 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                🔄 Baru
-              </button>
-              <button
-                onClick={() => setShowHistory(!showHistory)}
-                className="flex-1 sm:flex-none px-6 py-3 bg-gray-600 hover:bg-gray-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-              >
-                📜 Riwayat
-              </button>
-            </div>
-          </div>
           
-          {/* Email History Dropdown */}
-          {showHistory && emailHistory.length > 0 && (
-            <div className="mt-4 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
-              <p className="px-4 py-2 text-sm text-gray-400 border-b border-gray-700">Email Sebelumnya:</p>
-              {emailHistory.map((historyEmail, index) => (
-                <button
-                  key={index}
-                  onClick={() => switchToEmail(historyEmail)}
-                  className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between ${
-                    historyEmail === emailAddress ? 'bg-purple-900/30 text-green-400' : 'text-gray-300'
-                  }`}
-                >
-                  <span className="font-mono text-sm">{historyEmail}</span>
-                  {historyEmail === emailAddress && <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>}
-                </button>
-              ))}
+          {/* Email Display with Dropdown */}
+          <div className="relative mb-4">
+            <div className="flex items-center">
+              <div 
+                onClick={() => setShowHistory(!showHistory)}
+                className="flex-1 bg-gray-900 rounded-xl px-4 py-3 font-mono text-lg text-green-400 border border-gray-600 cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
+              >
+                <span>{emailAddress || 'Generating...'}</span>
+                <span className={`ml-2 transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+              </div>
+            </div>
+            
+            {/* History Dropdown */}
+            {showHistory && (
+              <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-10 shadow-xl max-h-64 overflow-y-auto">
+                {emailHistory.length > 0 ? (
+                  emailHistory.map((historyEmail, index) => (
+                    <button
+                      key={index}
+                      onClick={() => switchToEmail(historyEmail)}
+                      className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between border-b border-gray-800 last:border-0 ${
+                        historyEmail === emailAddress ? 'bg-purple-900/30' : ''
+                      }`}
+                    >
+                      <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
+                        {historyEmail}
+                      </span>
+                      {historyEmail === emailAddress && (
+                        <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>
+                      )}
+                    </button>
+                  ))
+                ) : (
+                  <p className="px-4 py-3 text-gray-500 text-sm">Belum ada riwayat</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Action Buttons */}
+          <div className="flex flex-wrap gap-2">
+            <button
+              onClick={copyToClipboard}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              {copied ? '✓ Tersalin!' : '📋 Salin'}
+            </button>
+            <button
+              onClick={generateNewEmail}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              🔄 Baru
+            </button>
+            <button
+              onClick={() => setShowManualInput(!showManualInput)}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+            >
+              🔍 Buka Email
+            </button>
+          </div>
+
+          {/* Manual Input */}
+          {showManualInput && (
+            <div className="mt-4 flex gap-2">
+              <div className="flex-1 flex items-center bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
+                <input
+                  type="text"
+                  value={manualInput}
+                  onChange={(e) => setManualInput(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && openManualEmail()}
+                  placeholder="Ketik nama email..."
+                  className="flex-1 bg-transparent px-4 py-3 text-white outline-none font-mono"
+                />
+                <span className="text-gray-500 pr-4">@fdlnstore.com</span>
+              </div>
+              <button
+                onClick={openManualEmail}
+                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
+              >
+                Buka
+              </button>
             </div>
           )}
         </div>
