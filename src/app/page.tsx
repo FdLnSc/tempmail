@@ -38,7 +38,6 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false)
   const [emailHistory, setEmailHistory] = useState<string[]>([])
   const [manualInput, setManualInput] = useState('')
-  const [showManualInput, setShowManualInput] = useState(false)
 
   // Generate new email on first load
   useEffect(() => {
@@ -114,15 +113,18 @@ export default function Home() {
     setShowHistory(false)
   }
 
-  const openManualEmail = () => {
+  const createCustomEmail = () => {
     if (!manualInput.trim()) return
-    // Remove any @domain if user typed it
-    const prefix = manualInput.trim().replace(/@.*$/, '').toLowerCase()
+    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
     if (!prefix) return
     const fullEmail = `${prefix}@fdlnstore.com`
-    switchToEmail(fullEmail)
+    setEmailAddress(fullEmail)
+    localStorage.setItem('tempmail_address', fullEmail)
+    saveToHistory(fullEmail)
+    setEmailHistory(getEmailHistory())
+    setEmails([])
+    setSelectedEmail(null)
     setManualInput('')
-    setShowManualInput(false)
   }
 
   const copyToClipboard = async () => {
@@ -166,85 +168,91 @@ export default function Home() {
           <div className="relative mb-4 z-30">
             <div className="flex items-center">
               <div 
-                onClick={() => setShowHistory(!showHistory)}
+                onClick={() => {
+                  if (emailHistory.length > 0) setShowHistory(!showHistory)
+                }}
                 className="flex-1 bg-gray-900 rounded-xl px-4 py-3 font-mono text-lg text-green-400 border border-gray-600 cursor-pointer hover:border-gray-500 transition-colors flex items-center justify-between"
               >
-                <span>{emailAddress || 'Generating...'}</span>
-                <span className={`ml-2 transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+                <span>{emailAddress || 'Belum ada email'}</span>
+                {emailHistory.length > 0 && (
+                  <span className={`ml-2 transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
+                )}
               </div>
             </div>
             
             {/* History Dropdown */}
-            {showHistory && (
+            {showHistory && emailHistory.length > 0 && (
               <div className="absolute top-full left-0 right-0 mt-2 bg-gray-900 rounded-xl border border-gray-600 overflow-hidden z-50 shadow-2xl max-h-64 overflow-y-auto">
-                {emailHistory.length > 0 ? (
-                  emailHistory.map((historyEmail, index) => (
-                    <button
-                      key={index}
-                      onClick={() => switchToEmail(historyEmail)}
-                      className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between border-b border-gray-800 last:border-0 ${
-                        historyEmail === emailAddress ? 'bg-purple-900/30' : ''
-                      }`}
-                    >
-                      <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
-                        {historyEmail}
-                      </span>
-                      {historyEmail === emailAddress && (
-                        <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>
-                      )}
-                    </button>
-                  ))
-                ) : (
-                  <p className="px-4 py-3 text-gray-500 text-sm">Belum ada riwayat</p>
-                )}
+                {emailHistory.map((historyEmail, index) => (
+                  <button
+                    key={index}
+                    onClick={() => switchToEmail(historyEmail)}
+                    className={`w-full px-4 py-3 text-left hover:bg-gray-700 transition-colors flex items-center justify-between border-b border-gray-800 last:border-0 ${
+                      historyEmail === emailAddress ? 'bg-purple-900/30' : ''
+                    }`}
+                  >
+                    <span className={`font-mono text-sm ${historyEmail === emailAddress ? 'text-green-400' : 'text-gray-300'}`}>
+                      {historyEmail}
+                    </span>
+                    {historyEmail === emailAddress && (
+                      <span className="text-xs bg-green-600 px-2 py-0.5 rounded">Aktif</span>
+                    )}
+                  </button>
+                ))}
               </div>
             )}
           </div>
 
           {/* Action Buttons */}
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap gap-2 mb-4">
             <button
               onClick={copyToClipboard}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-green-600 hover:bg-green-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              disabled={!emailAddress}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-green-600 hover:bg-green-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
             >
               {copied ? '✓ Tersalin!' : '📋 Salin'}
             </button>
             <button
-              onClick={generateNewEmail}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
+              onClick={fetchEmails}
+              disabled={!emailAddress || loading}
+              className="flex-1 sm:flex-none px-5 py-2.5 bg-gray-600 hover:bg-gray-500 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
             >
-              🔄 Baru
-            </button>
-            <button
-              onClick={() => setShowManualInput(!showManualInput)}
-              className="flex-1 sm:flex-none px-5 py-2.5 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors flex items-center justify-center gap-2"
-            >
-              🔍 Buka Email
+              {loading ? '⏳' : '🔄 Refresh'}
             </button>
           </div>
 
-          {/* Manual Input */}
-          {showManualInput && (
-            <div className="mt-4 flex gap-2">
+          {/* Create New Email Section */}
+          <div className="border-t border-gray-700 pt-4">
+            <p className="text-gray-400 text-sm mb-3">Buat email baru:</p>
+            <div className="flex gap-2">
               <div className="flex-1 flex items-center bg-gray-900 rounded-xl border border-gray-600 overflow-hidden">
                 <input
                   type="text"
                   value={manualInput}
-                  onChange={(e) => setManualInput(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && openManualEmail()}
-                  placeholder="Ketik nama email..."
-                  className="flex-1 bg-transparent px-4 py-3 text-white outline-none font-mono"
+                  onChange={(e) => setManualInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
+                  onKeyDown={(e) => e.key === 'Enter' && manualInput && createCustomEmail()}
+                  placeholder="ketik nama email..."
+                  className="flex-1 bg-transparent px-4 py-2.5 text-white outline-none font-mono"
                 />
-                <span className="text-gray-500 pr-4">@fdlnstore.com</span>
+                <span className="text-gray-500 pr-3 text-sm">@fdlnstore.com</span>
               </div>
               <button
-                onClick={openManualEmail}
-                className="px-6 py-3 bg-blue-600 hover:bg-blue-500 text-white rounded-xl font-medium transition-colors"
+                onClick={createCustomEmail}
+                disabled={!manualInput}
+                className="px-4 py-2.5 bg-blue-600 hover:bg-blue-500 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-xl font-medium transition-colors"
+                title="Buat dengan nama custom"
               >
-                Buka
+                ➕
+              </button>
+              <button
+                onClick={generateNewEmail}
+                className="px-4 py-2.5 bg-purple-600 hover:bg-purple-500 text-white rounded-xl font-medium transition-colors"
+                title="Generate random"
+              >
+                🎲
               </button>
             </div>
-          )}
+          </div>
         </div>
 
         {/* Main Content Grid */}
