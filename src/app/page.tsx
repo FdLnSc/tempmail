@@ -433,10 +433,7 @@ export default function Home() {
       openLoginModal(fullEmail)
       setManualInput('')
     } else {
-      // Email doesn't exist
-      setModalEmail(fullEmail)
-      setModalError('Email tidak ditemukan')
-      setModalType('login')
+      window.alert('❌ Email tidak ada')
       setManualInput('')
     }
   }
