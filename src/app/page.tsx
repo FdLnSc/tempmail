@@ -2,24 +2,17 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Email } from '@/lib/supabase'
-import * as OTPAuth from 'otpauth'
 
-// TOTP Secret for admin verification
-const TOTP_SECRET = '3XRVZR74ZPVUHSGYLLP7Z5ABJFXVZCJ5'
-
-// Verify TOTP code
-function verifyTOTP(code: string): boolean {
+// Verify TOTP via server-side API
+async function verifyTOTP(code: string): Promise<boolean> {
   try {
-    const totp = new OTPAuth.TOTP({
-      issuer: 'TempMail',
-      label: 'Admin',
-      algorithm: 'SHA1',
-      digits: 6,
-      period: 30,
-      secret: TOTP_SECRET
+    const res = await fetch('/api/verify-2fa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ code })
     })
-    const delta = totp.validate({ token: code, window: 1 })
-    return delta !== null
+    const data = await res.json()
+    return data.success === true
   } catch {
     return false
   }
@@ -186,13 +179,17 @@ export default function Home() {
   }
 
   // Verify 2FA and proceed
-  const handleVerify2FA = () => {
+  const handleVerify2FA = async () => {
     if (!totpCode || totpCode.length !== 6) {
       setModalError('Masukkan 6 digit kode')
       return
     }
     
-    if (!verifyTOTP(totpCode)) {
+    setModalLoading(true)
+    const isValid = await verifyTOTP(totpCode)
+    setModalLoading(false)
+    
+    if (!isValid) {
       setModalError('Kode tidak valid atau sudah expired')
       return
     }
@@ -661,16 +658,17 @@ export default function Home() {
                 <div className="flex gap-2">
                   <button
                     onClick={resetModal}
-                    className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl"
+                    disabled={modalLoading}
+                    className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl disabled:opacity-50"
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleVerify2FA}
-                    disabled={totpCode.length !== 6}
+                    disabled={totpCode.length !== 6 || modalLoading}
                     className="flex-1 px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-xl"
                   >
-                    Verifikasi
+                    {modalLoading ? '⏳' : 'Verifikasi'}
                   </button>
                 </div>
               </div>
