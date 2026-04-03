@@ -93,6 +93,9 @@ export default function Home() {
   const [emailHistory, setEmailHistory] = useState<string[]>([])
   const [manualInput, setManualInput] = useState('')
   
+  // Toast notification
+  const [toast, setToast] = useState<string | null>(null)
+  
   // Modal states
   const [modalType, setModalType] = useState<ModalType>('none')
   const [modalEmail, setModalEmail] = useState('')
@@ -104,6 +107,12 @@ export default function Home() {
   const [newPassword, setNewPassword] = useState('')
   const [modalError, setModalError] = useState('')
   const [modalLoading, setModalLoading] = useState(false)
+
+  // Show toast notification
+  const showToast = (message: string) => {
+    setToast(message)
+    setTimeout(() => setToast(null), 3000)
+  }
 
   // Generate new email on first load
   useEffect(() => {
@@ -433,7 +442,7 @@ export default function Home() {
       openLoginModal(fullEmail)
       setManualInput('')
     } else {
-      window.alert('❌ Email tidak ada')
+      showToast('Email tidak ditemukan')
       setManualInput('')
     }
   }
@@ -504,6 +513,26 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none">
+          <div 
+            className="pointer-events-auto bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4 animate-in zoom-in-95 fade-in duration-300"
+            style={{ 
+              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
+            }}
+          >
+            <span className="text-white text-sm font-medium">❌ {toast}</span>
+            <button 
+              onClick={() => setToast(null)}
+              className="text-white/50 hover:text-white text-lg leading-none hover:bg-white/10 rounded-full w-6 h-6 flex items-center justify-center transition-colors"
+            >
+              ×
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* Header */}
       <header className="sticky top-0 z-40 border-b border-white/10 bg-white/5 backdrop-blur-xl">
         <div className="max-w-4xl mx-auto px-3 py-3 sm:px-4">
