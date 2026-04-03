@@ -159,11 +159,11 @@ export default function Home() {
 
       <main className="max-w-6xl mx-auto px-4 py-8">
         {/* Email Address Card */}
-        <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 mb-8 border border-gray-700">
+        <div className="bg-gray-800/50 backdrop-blur rounded-2xl p-6 mb-8 border border-gray-700 relative z-20">
           <p className="text-gray-400 text-sm mb-2">Alamat email sementara Anda:</p>
           
           {/* Email Display with Dropdown */}
-          <div className="relative mb-4">
+          <div className="relative mb-4 z-30">
             <div className="flex items-center">
               <div 
                 onClick={() => setShowHistory(!showHistory)}
