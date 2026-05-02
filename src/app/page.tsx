@@ -1,5 +1,6 @@
 'use client'
 
+import Image from 'next/image'
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Email } from '@/lib/supabase'
 import {
@@ -40,6 +41,20 @@ function normalizeEmailPrefix(value: string): string {
 function buildEmailAddress(prefix: string, domain: TempMailDomain): string {
   return `${prefix}@${domain}`
 }
+
+function cx(...classes: Array<string | false | null | undefined>): string {
+  return classes.filter(Boolean).join(' ')
+}
+
+const surfaceClass = 'rounded-lg border border-white/10 bg-slate-900/80 shadow-lg shadow-black/20 backdrop-blur'
+const fieldClass = 'rounded-lg border border-white/10 bg-slate-950/70 text-white outline-none transition focus-within:border-cyan-400/60 focus-within:ring-2 focus-within:ring-cyan-400/10'
+const inputClass = 'w-full px-3 py-2.5 text-sm text-white outline-none placeholder:text-white/30'
+const buttonBaseClass = 'min-h-11 rounded-lg border px-3 py-2.5 text-sm font-medium text-white transition focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/40 disabled:cursor-not-allowed disabled:border-white/10 disabled:bg-white/5 disabled:text-white/35'
+const primaryButtonClass = `${buttonBaseClass} border-emerald-400/30 bg-emerald-500/15 hover:bg-emerald-500/25`
+const secondaryButtonClass = `${buttonBaseClass} border-cyan-400/30 bg-cyan-500/15 hover:bg-cyan-500/25`
+const subtleButtonClass = `${buttonBaseClass} border-white/10 bg-white/5 hover:bg-white/10`
+const accentButtonClass = `${buttonBaseClass} border-violet-400/30 bg-violet-500/15 hover:bg-violet-500/25`
+const dangerIconButtonClass = 'flex h-10 w-10 shrink-0 items-center justify-center rounded-md text-sm text-white/35 transition hover:bg-red-500/10 hover:text-red-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-red-400/30'
 
 // Generate random email address
 function generateEmailAddress(domain: TempMailDomain): string {
@@ -525,20 +540,16 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
+    <div className="min-h-screen bg-slate-950 text-white">
       {/* Toast Notification */}
       {toast && (
-        <div className="fixed inset-0 flex items-center justify-center z-[100] pointer-events-none">
-          <div 
-            className="pointer-events-auto bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl px-6 py-4 shadow-2xl flex items-center gap-4 animate-in zoom-in-95 fade-in duration-300"
-            style={{ 
-              boxShadow: '0 8px 32px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.1)'
-            }}
-          >
-            <span className="text-white text-sm font-medium">❌ {toast}</span>
+        <div className="fixed inset-x-0 top-4 z-[100] flex justify-center px-3 pointer-events-none">
+          <div className="pointer-events-auto flex max-w-sm items-center gap-3 rounded-lg border border-red-400/20 bg-slate-900/95 px-4 py-3 shadow-xl shadow-black/30">
+            <span className="text-sm font-medium text-white">❌ {toast}</span>
             <button 
               onClick={() => setToast(null)}
-              className="text-white/50 hover:text-white text-lg leading-none hover:bg-white/10 rounded-full w-6 h-6 flex items-center justify-center transition-colors"
+              className="flex h-6 w-6 items-center justify-center rounded-md text-lg leading-none text-white/50 transition hover:bg-white/10 hover:text-white"
+              aria-label="Tutup notifikasi"
             >
               ×
             </button>
@@ -547,19 +558,19 @@ export default function Home() {
       )}
 
       {/* Header */}
-      <header className="sticky top-0 z-40 border-b border-white/10 bg-white/5 backdrop-blur-xl">
-        <div className="max-w-4xl mx-auto px-3 py-3 sm:px-4">
+      <header className="sticky top-0 z-40 border-b border-white/10 bg-slate-950/90 backdrop-blur">
+        <div className="mx-auto max-w-6xl px-4 py-3">
           <div className="flex items-center gap-2 sm:gap-3">
-            <img src="/logo.png" alt="Logo" className="w-8 h-8 sm:w-10 sm:h-10 object-contain" />
-            <h1 className="text-lg sm:text-2xl font-semibold text-white">TempMail FdLnStore</h1>
+            <Image src="/logo.png" alt="TempMail FdLnStore" width={40} height={40} className="h-9 w-9 object-contain sm:h-10 sm:w-10" priority />
+            <h1 className="text-base font-semibold text-white sm:text-xl">TempMail FdLnStore</h1>
           </div>
         </div>
       </header>
 
-      <main className="max-w-4xl mx-auto px-3 py-4 sm:px-4 sm:py-6">
+      <main className="mx-auto w-full max-w-6xl px-4 py-4 sm:py-6">
         {/* Email Address Card */}
-        <div className="bg-white/5 rounded-2xl p-4 sm:p-5 mb-4 sm:mb-6 border border-white/10 relative z-20">
-          <p className="text-white/60 text-xs sm:text-sm mb-2">Alamat email:</p>
+        <div className={cx(surfaceClass, 'relative z-20 mb-4 p-4 sm:mb-6 sm:p-5')}>
+          <p className="mb-2 text-xs font-medium uppercase text-white/50">Alamat email</p>
           
           {/* Email Display with Dropdown */}
           <div className="relative mb-3 z-30">
@@ -567,9 +578,9 @@ export default function Home() {
               onClick={() => {
                 if (emailHistory.length > 0) setShowHistory(!showHistory)
               }}
-              className="bg-black/30 rounded-xl px-3 py-3 sm:px-4 font-mono text-sm sm:text-base text-purple-400 border border-white/10 cursor-pointer hover:border-purple-500/50 transition-colors flex items-center justify-between"
+              className={cx(fieldClass, 'flex cursor-pointer items-center justify-between px-3 py-3 font-mono text-sm text-cyan-300 hover:border-cyan-400/50 sm:px-4 sm:text-base')}
             >
-              <span className="truncate">{emailAddress || 'Belum ada email'}</span>
+              <span className="min-w-0 truncate">{emailAddress || 'Belum ada email'}</span>
               {emailHistory.length > 0 && (
                 <span className={`ml-2 text-white/40 transition-transform ${showHistory ? 'rotate-180' : ''}`}>▼</span>
               )}
@@ -577,29 +588,30 @@ export default function Home() {
             
             {/* History Dropdown */}
             {showHistory && emailHistory.length > 0 && (
-              <div className="absolute top-full left-0 right-0 mt-1 bg-black/95 rounded-xl border border-white/10 overflow-hidden z-50 shadow-xl max-h-48 overflow-y-auto">
+              <div className="absolute left-0 right-0 top-full z-50 mt-1 max-h-56 overflow-y-auto rounded-lg border border-white/10 bg-slate-950/95 shadow-xl shadow-black/30">
                 {emailHistory.map((historyEmail, index) => (
                   <div
                     key={index}
                     className={`flex items-center border-b border-white/5 last:border-0 ${
-                      historyEmail === emailAddress ? 'bg-purple-500/20' : ''
+                      historyEmail === emailAddress ? 'bg-cyan-500/10' : ''
                     }`}
                   >
                     <button
                       onClick={(e) => deleteFromHistory(historyEmail, e)}
-                      className="px-2 sm:px-3 py-2 text-white/30 hover:text-red-400 text-sm"
+                      className={dangerIconButtonClass}
+                      aria-label={`Hapus ${historyEmail} dari riwayat`}
                     >
                       🗑️
                     </button>
                     <button
                       onClick={() => handleOpenFromHistory(historyEmail)}
-                      className="flex-1 px-2 py-2 text-left flex items-center justify-between"
+                      className="flex min-w-0 flex-1 items-center justify-between px-2 py-2 text-left transition hover:bg-white/5"
                     >
-                      <span className={`font-mono text-xs sm:text-sm truncate ${historyEmail === emailAddress ? 'text-purple-400' : 'text-white/70'}`}>
+                      <span className={`truncate font-mono text-xs sm:text-sm ${historyEmail === emailAddress ? 'text-cyan-300' : 'text-white/70'}`}>
                         {historyEmail}
                       </span>
                       {historyEmail === emailAddress && (
-                        <span className="text-[10px] sm:text-xs bg-purple-500/30 text-purple-300 px-1.5 py-0.5 rounded-full ml-1">Aktif</span>
+                        <span className="ml-2 rounded-md bg-cyan-500/15 px-1.5 py-0.5 text-[10px] text-cyan-200 sm:text-xs">Aktif</span>
                       )}
                     </button>
                   </div>
@@ -609,18 +621,18 @@ export default function Home() {
           </div>
 
           {/* Action Buttons */}
-          <div className="flex gap-2 mb-3 sm:mb-4">
+          <div className="mb-3 grid grid-cols-2 gap-2 sm:mb-4">
             <button
               onClick={copyToClipboard}
               disabled={!emailAddress}
-              className="flex-1 px-3 sm:px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base"
+              className={subtleButtonClass}
             >
               {copied ? '✓ Tersalin!' : '📋 Salin'}
             </button>
             <button
               onClick={fetchEmails}
               disabled={!emailAddress || loading}
-              className="flex-1 px-3 sm:px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base"
+              className={subtleButtonClass}
             >
               {loading ? '⏳' : '🔄 Refresh'}
             </button>
@@ -630,23 +642,23 @@ export default function Home() {
           <div className="border-t border-white/10 pt-3 sm:pt-4">
             <div className="flex flex-col gap-2">
               <div className="flex flex-col sm:flex-row gap-2">
-                <div className="flex-1 flex items-center bg-black/30 rounded-xl border border-white/10 overflow-hidden">
+                <div className={cx(fieldClass, 'flex flex-1 items-center overflow-hidden')}>
                   <input
                     type="text"
                     value={manualInput}
                     onChange={(e) => setManualInput(normalizeEmailPrefix(e.target.value))}
                     onKeyDown={(e) => e.key === 'Enter' && manualInput && handleOpenEmail()}
                     placeholder="nama email..."
-                    className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-white outline-none font-mono text-sm placeholder:text-white/30"
+                    className={cx(inputClass, 'min-w-0 flex-1 bg-transparent font-mono')}
                   />
                 </div>
-                <div className="flex items-center bg-black/30 rounded-xl border border-white/10 overflow-hidden sm:w-48">
+                <div className={cx(fieldClass, 'flex items-center overflow-hidden sm:w-52')}>
                   <span className="text-white/30 pl-3 text-sm">@</span>
                   <select
                     value={selectedDomain}
                     onChange={(e) => setSelectedDomain(e.target.value as TempMailDomain)}
                     aria-label="Pilih domain email"
-                    className="w-full bg-transparent px-2 py-2.5 text-white outline-none text-sm font-mono cursor-pointer [&>option]:bg-gray-900 [&>option]:text-white"
+                    className="w-full cursor-pointer bg-transparent px-2 py-2.5 font-mono text-sm text-white outline-none [&>option]:bg-slate-900 [&>option]:text-white"
                   >
                     {TEMPMAIL_DOMAINS.map((domain) => (
                       <option key={domain} value={domain}>
@@ -656,29 +668,29 @@ export default function Home() {
                   </select>
                 </div>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+              <div className="grid grid-cols-3 gap-2">
                 <button
                   onClick={handleOpenEmail}
                   disabled={!manualInput}
-                  className="px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base font-medium"
+                  className={secondaryButtonClass}
                   title="Akses email"
                 >
-                  🔓 Akses Email
+                  🔓 <span>Akses</span><span className="hidden sm:inline"> Email</span>
                 </button>
                 <button
                   onClick={handleCreateCustom}
                   disabled={!manualInput}
-                  className="px-4 py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base font-medium"
+                  className={primaryButtonClass}
                   title="Buat email"
                 >
-                  ➕ Buat Email
+                  ➕ <span>Buat</span><span className="hidden sm:inline"> Email</span>
                 </button>
                 <button
                   onClick={handleGenerateRandom}
-                  className="px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-white rounded-xl text-sm sm:text-base font-medium"
+                  className={accentButtonClass}
                   title="Buat email acak"
                 >
-                  🎲 Buat Random
+                  🎲 <span>Random</span>
                 </button>
               </div>
             </div>
@@ -687,10 +699,10 @@ export default function Home() {
 
         {/* 2FA Verification Modal */}
         {modalType === 'verify2fa' && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3">
-            <div className="bg-gray-900/95 rounded-2xl p-5 sm:p-6 w-full max-w-sm border border-white/10 shadow-xl">
-              <h3 className="text-lg font-semibold text-white mb-2">🔐 Verifikasi 2FA</h3>
-              <p className="text-white/50 text-sm mb-4">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
+            <div className={cx(surfaceClass, 'max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto p-5 sm:p-6')}>
+              <h3 className="mb-2 text-lg font-semibold text-white">🔐 Verifikasi 2FA</h3>
+              <p className="mb-4 text-sm text-white/50">
                 Masukkan 6 digit kode dari Google Authenticator
               </p>
               
@@ -702,26 +714,26 @@ export default function Home() {
                   onKeyDown={(e) => e.key === 'Enter' && totpCode.length === 6 && handleVerify2FA()}
                   placeholder="000000"
                   maxLength={6}
-                  className="w-full bg-black/30 border border-white/10 rounded-xl px-4 py-3 text-white text-center text-2xl font-mono tracking-[0.4em] outline-none focus:border-purple-500/50"
+                  className="w-full rounded-lg border border-white/10 bg-slate-950/70 px-4 py-3 text-center font-mono text-2xl tracking-[0.35em] text-white outline-none transition focus:border-cyan-400/60 focus:ring-2 focus:ring-cyan-400/10"
                   autoFocus
                 />
                 
                 {modalError && (
-                  <p className="text-red-400 text-sm text-center">❌ {modalError}</p>
+                  <p className="text-center text-sm text-red-300">❌ {modalError}</p>
                 )}
                 
                 <div className="flex gap-2">
                   <button
                     onClick={resetModal}
                     disabled={modalLoading}
-                    className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl disabled:opacity-50"
+                    className={cx(subtleButtonClass, 'flex-1')}
                   >
                     Batal
                   </button>
                   <button
                     onClick={handleVerify2FA}
                     disabled={totpCode.length !== 6 || modalLoading}
-                    className="flex-1 px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-xl"
+                    className={cx(accentButtonClass, 'flex-1')}
                   >
                     {modalLoading ? '⏳' : 'Verifikasi'}
                   </button>
@@ -733,53 +745,53 @@ export default function Home() {
 
         {/* Password Modal */}
         {(modalType === 'create' || modalType === 'login' || modalType === 'forgot') && (
-          <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-3">
-            <div className="bg-gray-900/95 rounded-2xl p-5 sm:p-6 w-full max-w-sm border border-white/10 shadow-xl">
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-3">
+            <div className={cx(surfaceClass, 'max-h-[calc(100vh-2rem)] w-full max-w-md overflow-y-auto p-5 sm:p-6')}>
               {/* Create Email Modal */}
               {modalType === 'create' && (
                 <>
-                  <h3 className="text-lg font-semibold text-white mb-1">🔐 Buat Email Baru</h3>
-                  <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
+                  <h3 className="mb-1 text-lg font-semibold text-white">🔐 Buat Email Baru</h3>
+                  <p className="mb-4 text-xs text-white/50 sm:text-sm">
+                    <span className="break-all font-mono text-cyan-300">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="text-white/50 text-xs">Password</label>
+                      <label className="text-xs font-medium text-white/50">Password</label>
                       <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         placeholder="Minimal 4 karakter"
-                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-purple-500/50"
+                        className={cx(fieldClass, inputClass, 'mt-1')}
                       />
                     </div>
                     <div>
-                      <label className="text-white/50 text-xs">Konfirmasi Password</label>
+                      <label className="text-xs font-medium text-white/50">Konfirmasi Password</label>
                       <input
                         type="password"
                         value={confirmPassword}
                         onChange={(e) => setConfirmPassword(e.target.value)}
                         placeholder="Ulangi password"
-                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-purple-500/50"
+                        className={cx(fieldClass, inputClass, 'mt-1')}
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-xs text-center">❌ {modalError}</p>
+                      <p className="text-center text-xs text-red-300">❌ {modalError}</p>
                     )}
                     
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={resetModal}
-                        className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-sm"
+                        className={cx(subtleButtonClass, 'flex-1')}
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleCreateEmail}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-xl text-sm"
+                        className={cx(primaryButtonClass, 'flex-1')}
                       >
                         {modalLoading ? '⏳' : '✓ Buat'}
                       </button>
@@ -791,40 +803,40 @@ export default function Home() {
               {/* Login Modal */}
               {modalType === 'login' && (
                 <>
-                  <h3 className="text-lg font-semibold text-white mb-1">🔓 Buka Email</h3>
-                  <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
+                  <h3 className="mb-1 text-lg font-semibold text-white">🔓 Buka Email</h3>
+                  <p className="mb-4 text-xs text-white/50 sm:text-sm">
+                    <span className="break-all font-mono text-cyan-300">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="text-white/50 text-xs">Password</label>
+                      <label className="text-xs font-medium text-white/50">Password</label>
                       <input
                         type="password"
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}
                         onKeyDown={(e) => e.key === 'Enter' && handleLogin()}
                         placeholder="Masukkan password"
-                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-purple-500/50"
+                        className={cx(fieldClass, inputClass, 'mt-1')}
                         autoFocus
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-xs text-center">❌ {modalError}</p>
+                      <p className="text-center text-xs text-red-300">❌ {modalError}</p>
                     )}
                     
                     <div className="flex gap-2 pt-1">
                       <button
                         onClick={resetModal}
-                        className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-sm"
+                        className={cx(subtleButtonClass, 'flex-1')}
                       >
                         Batal
                       </button>
                       <button
                         onClick={handleLogin}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-xl text-sm"
+                        className={cx(secondaryButtonClass, 'flex-1')}
                       >
                         {modalLoading ? '⏳' : '🔓 Buka'}
                       </button>
@@ -836,7 +848,7 @@ export default function Home() {
                         setPassword('')
                         setModalError('')
                       }}
-                      className="w-full text-center text-xs text-white/40 hover:text-white/70"
+                      className="w-full rounded-md py-1.5 text-center text-xs text-white/45 transition hover:bg-white/5 hover:text-white/75 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-cyan-400/30"
                     >
                       Lupa password?
                     </button>
@@ -847,35 +859,35 @@ export default function Home() {
               {/* Forgot Password Modal */}
               {modalType === 'forgot' && (
                 <>
-                  <h3 className="text-lg font-semibold text-white mb-1">🔑 Ganti Password</h3>
-                  <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
+                  <h3 className="mb-1 text-lg font-semibold text-white">🔑 Ganti Password</h3>
+                  <p className="mb-4 text-xs text-white/50 sm:text-sm">
+                    <span className="break-all font-mono text-cyan-300">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">
                     <div>
-                      <label className="text-white/50 text-xs">Password Lama</label>
+                      <label className="text-xs font-medium text-white/50">Password Lama</label>
                       <input
                         type="password"
                         value={oldPassword}
                         onChange={(e) => setOldPassword(e.target.value)}
                         placeholder="Masukkan password lama"
-                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-purple-500/50"
+                        className={cx(fieldClass, inputClass, 'mt-1')}
                       />
                     </div>
                     <div>
-                      <label className="text-white/50 text-xs">Password Baru</label>
+                      <label className="text-xs font-medium text-white/50">Password Baru</label>
                       <input
                         type="password"
                         value={newPassword}
                         onChange={(e) => setNewPassword(e.target.value)}
                         placeholder="Minimal 4 karakter"
-                        className="w-full mt-1 bg-black/30 border border-white/10 rounded-xl px-3 py-2.5 text-white text-sm outline-none focus:border-purple-500/50"
+                        className={cx(fieldClass, inputClass, 'mt-1')}
                       />
                     </div>
                     
                     {modalError && (
-                      <p className="text-red-400 text-xs text-center">❌ {modalError}</p>
+                      <p className="text-center text-xs text-red-300">❌ {modalError}</p>
                     )}
                     
                     <div className="flex gap-2 pt-1">
@@ -886,14 +898,14 @@ export default function Home() {
                           setNewPassword('')
                           setModalError('')
                         }}
-                        className="flex-1 px-4 py-2.5 bg-white/5 hover:bg-white/10 border border-white/10 text-white rounded-xl text-sm"
+                        className={cx(subtleButtonClass, 'flex-1')}
                       >
                         Kembali
                       </button>
                       <button
                         onClick={handleForgotPassword}
                         disabled={modalLoading}
-                        className="flex-1 px-4 py-2.5 bg-orange-500/20 hover:bg-orange-500/30 border border-orange-500/30 disabled:bg-white/5 disabled:border-white/10 text-white rounded-xl text-sm"
+                        className={cx(accentButtonClass, 'flex-1')}
                       >
                         {modalLoading ? '⏳' : '🔑 Ganti'}
                       </button>
@@ -906,48 +918,49 @@ export default function Home() {
         )}
 
         {/* Main Content Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 sm:gap-6">
+        <div className="grid grid-cols-1 gap-4 sm:gap-6 lg:grid-cols-[360px_minmax(0,1fr)]">
           {/* Inbox List */}
-          <div className="md:col-span-1 bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-white/10 flex items-center justify-between">
-              <h2 className="font-medium text-white text-sm sm:text-base flex items-center gap-2">
+          <div className={cx(surfaceClass, 'overflow-hidden')}>
+            <div className="flex items-center justify-between border-b border-white/10 p-3 sm:p-4">
+              <h2 className="flex items-center gap-2 text-sm font-semibold text-white sm:text-base">
                 📥 Inbox
-                <span className="bg-purple-500/30 text-purple-300 text-xs px-2 py-0.5 rounded-full">
+                <span className="rounded-md bg-cyan-500/15 px-2 py-0.5 text-xs text-cyan-200">
                   {emails.length}
                 </span>
               </h2>
               <button
                 onClick={fetchEmails}
                 disabled={loading}
-                className="text-white/40 hover:text-white text-sm"
+                className="flex h-9 w-9 items-center justify-center rounded-md text-sm text-white/45 transition hover:bg-white/5 hover:text-white disabled:cursor-not-allowed disabled:text-white/25"
+                aria-label="Refresh inbox"
               >
                 {loading ? '⏳' : '🔄'}
               </button>
             </div>
             
-            <div className="max-h-64 sm:max-h-80 overflow-y-auto">
+            <div className="max-h-72 overflow-y-auto lg:max-h-[520px]">
               {emails.length === 0 ? (
-                <div className="p-6 sm:p-8 text-center text-white/40">
-                  <p className="text-4xl mb-2">📭</p>
+                <div className="p-8 text-center text-white/40">
+                  <p className="mb-2 text-4xl">📭</p>
                   <p className="text-sm">Belum ada email</p>
-                  <p className="text-xs mt-1 text-white/30">Email akan muncul otomatis</p>
+                  <p className="mt-1 text-xs text-white/30">Email akan muncul otomatis</p>
                 </div>
               ) : (
                 emails.map((email) => (
                   <button
                     key={email.id}
                     onClick={() => setSelectedEmail(email)}
-                    className={`w-full p-3 text-left border-b border-white/5 hover:bg-white/5 ${
-                      selectedEmail?.id === email.id ? 'bg-purple-500/20' : ''
+                    className={`w-full border-b border-white/5 p-3 text-left transition hover:bg-white/5 ${
+                      selectedEmail?.id === email.id ? 'bg-cyan-500/10' : ''
                     }`}
                   >
-                    <p className="font-medium text-white text-sm truncate">
+                    <p className="truncate text-sm font-medium text-white">
                       {email.from_address}
                     </p>
-                    <p className="text-xs text-white/60 truncate">
+                    <p className="truncate text-xs text-white/60">
                       {email.subject || '(Tanpa subjek)'}
                     </p>
-                    <p className="text-[10px] text-white/30 mt-1">
+                    <p className="mt-1 text-[10px] text-white/30">
                       {formatDate(email.created_at)}
                     </p>
                   </button>
@@ -957,37 +970,37 @@ export default function Home() {
           </div>
 
           {/* Email Detail */}
-          <div className="md:col-span-2 bg-white/5 rounded-2xl border border-white/10 overflow-hidden">
+          <div className={cx(surfaceClass, 'min-w-0 overflow-hidden')}>
             {selectedEmail ? (
               <>
-                <div className="p-3 sm:p-4 border-b border-white/10">
-                  <h3 className="font-medium text-white text-sm sm:text-base">
+                <div className="border-b border-white/10 p-3 sm:p-4">
+                  <h3 className="break-words text-sm font-semibold text-white sm:text-base">
                     {selectedEmail.subject || '(Tanpa subjek)'}
                   </h3>
-                  <div className="mt-2 text-xs text-white/50 space-y-0.5">
-                    <p><span className="text-white/30">Dari:</span> {selectedEmail.from_address}</p>
-                    <p><span className="text-white/30">Kepada:</span> {selectedEmail.to_address}</p>
+                  <div className="mt-2 space-y-0.5 break-words text-xs text-white/50">
+                    <p><span className="text-white/30">Dari:</span> <span className="font-mono">{selectedEmail.from_address}</span></p>
+                    <p><span className="text-white/30">Kepada:</span> <span className="font-mono">{selectedEmail.to_address}</span></p>
                     <p><span className="text-white/30">Waktu:</span> {formatDate(selectedEmail.created_at)}</p>
                   </div>
                 </div>
-                <div className="p-3 sm:p-4">
+                <div className="max-h-[560px] overflow-auto p-3 sm:p-4">
                   {selectedEmail.body_html ? (
                     <div
-                      className="prose prose-sm max-w-none bg-white rounded-xl p-3 sm:p-4 text-sm"
+                      className="prose prose-sm max-w-none rounded-lg bg-white p-3 text-sm sm:p-4"
                       dangerouslySetInnerHTML={{ __html: selectedEmail.body_html }}
                       style={{ color: 'black' }}
                     />
                   ) : (
-                    <pre className="whitespace-pre-wrap text-white/70 font-sans text-sm">
+                    <pre className="whitespace-pre-wrap break-words font-sans text-sm text-white/70">
                       {selectedEmail.body_text || '(Email kosong)'}
                     </pre>
                   )}
                 </div>
               </>
             ) : (
-              <div className="flex items-center justify-center p-8 text-center text-white/30 min-h-48">
+              <div className="flex min-h-64 items-center justify-center p-8 text-center text-white/30 lg:min-h-[420px]">
                 <div>
-                  <p className="text-4xl mb-2">✉️</p>
+                  <p className="mb-2 text-4xl">✉️</p>
                   <p className="text-sm">Pilih email untuk membaca</p>
                 </div>
               </div>
@@ -997,7 +1010,7 @@ export default function Home() {
       </main>
 
       {/* Footer */}
-      <footer className="border-t border-white/10 mt-8 py-4 text-center text-white/30 text-xs">
+      <footer className="mt-8 border-t border-white/10 py-4 text-center text-xs text-white/30">
         <p>© FdLnStore</p>
       </footer>
     </div>
