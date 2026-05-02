@@ -30,6 +30,23 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=your-anon-key
 TOTP_SECRET=base32-secret-for-otpauth
 ```
 
+## Domain Email
+
+Daftar domain yang muncul di dropdown ada di [src/lib/email-domains.ts](src/lib/email-domains.ts).
+
+Saat ini aktif di web:
+
+- `fdlnstore.com`
+- `fdlns.me`
+
+Untuk menambahkan domain baru ke web:
+
+1. Tambahkan domain ke array `TEMPMAIL_DOMAINS` di [src/lib/email-domains.ts](src/lib/email-domains.ts).
+2. Pastikan domain itu sudah aktif di Cloudflare Email Routing dan routing-nya mengarah ke Worker `tempmail-worker`.
+3. Deploy ulang frontend.
+
+Worker tidak perlu diubah selama semua domain baru diarahkan ke Worker yang sama, karena Worker menyimpan alamat tujuan penuh dari `message.to`.
+
 ## Menjalankan Lokal
 
 ```bash

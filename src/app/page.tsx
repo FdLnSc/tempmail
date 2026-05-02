@@ -2,6 +2,12 @@
 
 import { useState, useEffect, useCallback } from 'react'
 import { supabase, Email } from '@/lib/supabase'
+import {
+  DEFAULT_TEMPMAIL_DOMAIN,
+  TEMPMAIL_DOMAINS,
+  TempMailDomain,
+  getDomainFromEmail,
+} from '@/lib/email-domains'
 
 // Verify TOTP via server-side API
 async function verifyTOTP(code: string): Promise<boolean> {
@@ -27,14 +33,22 @@ async function hashPassword(password: string): Promise<string> {
   return hashArray.map(b => b.toString(16).padStart(2, '0')).join('')
 }
 
+function normalizeEmailPrefix(value: string): string {
+  return value.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+}
+
+function buildEmailAddress(prefix: string, domain: TempMailDomain): string {
+  return `${prefix}@${domain}`
+}
+
 // Generate random email address
-function generateEmailAddress(): string {
+function generateEmailAddress(domain: TempMailDomain): string {
   const chars = 'abcdefghijklmnopqrstuvwxyz0123456789'
   let result = ''
   for (let i = 0; i < 10; i++) {
     result += chars.charAt(Math.floor(Math.random() * chars.length))
   }
-  return `${result}@fdlnstore.com`
+  return buildEmailAddress(result, domain)
 }
 
 // Get email history from localStorage
@@ -92,6 +106,7 @@ export default function Home() {
   const [showHistory, setShowHistory] = useState(false)
   const [emailHistory, setEmailHistory] = useState<string[]>([])
   const [manualInput, setManualInput] = useState('')
+  const [selectedDomain, setSelectedDomain] = useState<TempMailDomain>(DEFAULT_TEMPMAIL_DOMAIN)
   
   // Toast notification
   const [toast, setToast] = useState<string | null>(null)
@@ -116,11 +131,15 @@ export default function Home() {
 
   // Generate new email on first load
   useEffect(() => {
-    const stored = localStorage.getItem('tempmail_address')
-    if (stored) {
-      setEmailAddress(stored)
-    }
-    setEmailHistory(getEmailHistory())
+    queueMicrotask(() => {
+      const stored = localStorage.getItem('tempmail_address')
+      if (stored) {
+        setEmailAddress(stored)
+        const storedDomain = getDomainFromEmail(stored)
+        if (storedDomain) setSelectedDomain(storedDomain)
+      }
+      setEmailHistory(getEmailHistory())
+    })
   }, [])
 
   // Fetch emails when address changes
@@ -141,7 +160,11 @@ export default function Home() {
   }, [emailAddress])
 
   useEffect(() => {
-    fetchEmails()
+    if (!emailAddress) return
+
+    queueMicrotask(() => {
+      fetchEmails()
+    })
     
     // Subscribe to realtime updates
     const channel = supabase
@@ -205,15 +228,15 @@ export default function Home() {
     
     // 2FA valid - proceed with action
     if (pendingAction === 'random') {
-      const newEmail = generateEmailAddress()
+      const newEmail = generateEmailAddress(selectedDomain)
       setModalEmail(newEmail)
       setModalType('create')
       setModalError('')
       setTotpCode('')
     } else if (pendingAction === 'custom') {
-      const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+      const prefix = normalizeEmailPrefix(manualInput)
       if (prefix) {
-        const fullEmail = `${prefix}@fdlnstore.com`
+        const fullEmail = buildEmailAddress(prefix, selectedDomain)
         setModalEmail(fullEmail)
         setModalType('create')
         setModalError('')
@@ -221,13 +244,6 @@ export default function Home() {
         setManualInput('')
       }
     }
-  }
-
-  // Open create email modal (for new email with password)
-  const openCreateModal = (email: string) => {
-    setModalEmail(email)
-    setModalType('create')
-    setModalError('')
   }
 
   // Open login modal (for existing email)
@@ -403,9 +419,9 @@ export default function Home() {
   // Create custom email - check if exists first
   const handleCreateCustom = async () => {
     if (!manualInput.trim()) return
-    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const prefix = normalizeEmailPrefix(manualInput)
     if (!prefix) return
-    const fullEmail = `${prefix}@fdlnstore.com`
+    const fullEmail = buildEmailAddress(prefix, selectedDomain)
     
     // Check if exists
     const { data: existing } = await supabase
@@ -427,9 +443,9 @@ export default function Home() {
   // Open email (buka existing email)
   const handleOpenEmail = async () => {
     if (!manualInput.trim()) return
-    const prefix = manualInput.trim().toLowerCase().replace(/[^a-z0-9]/g, '')
+    const prefix = normalizeEmailPrefix(manualInput)
     if (!prefix) return
-    const fullEmail = `${prefix}@fdlnstore.com`
+    const fullEmail = buildEmailAddress(prefix, selectedDomain)
     
     // Check if exists
     const { data: existing } = await supabase
@@ -507,9 +523,6 @@ export default function Home() {
       minute: '2-digit'
     })
   }
-
-  // Extract prefix from email for display
-  const emailPrefix = emailAddress.replace('@fdlnstore.com', '')
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900">
@@ -615,41 +628,57 @@ export default function Home() {
 
           {/* Create/Open Email Section */}
           <div className="border-t border-white/10 pt-3 sm:pt-4">
-            <div className="flex flex-col sm:flex-row gap-2">
-              <div className="flex-1 flex items-center bg-black/30 rounded-xl border border-white/10 overflow-hidden">
-                <input
-                  type="text"
-                  value={manualInput}
-                  onChange={(e) => setManualInput(e.target.value.toLowerCase().replace(/[^a-z0-9]/g, ''))}
-                  onKeyDown={(e) => e.key === 'Enter' && manualInput && handleOpenEmail()}
-                  placeholder="ketik nama..."
-                  className="flex-1 bg-transparent px-3 py-2.5 text-white outline-none font-mono text-sm placeholder:text-white/30"
-                />
-                <span className="text-white/30 pr-2 text-xs sm:text-sm">@fdlnstore.com</span>
+            <div className="flex flex-col gap-2">
+              <div className="flex flex-col sm:flex-row gap-2">
+                <div className="flex-1 flex items-center bg-black/30 rounded-xl border border-white/10 overflow-hidden">
+                  <input
+                    type="text"
+                    value={manualInput}
+                    onChange={(e) => setManualInput(normalizeEmailPrefix(e.target.value))}
+                    onKeyDown={(e) => e.key === 'Enter' && manualInput && handleOpenEmail()}
+                    placeholder="nama email..."
+                    className="flex-1 min-w-0 bg-transparent px-3 py-2.5 text-white outline-none font-mono text-sm placeholder:text-white/30"
+                  />
+                </div>
+                <div className="flex items-center bg-black/30 rounded-xl border border-white/10 overflow-hidden sm:w-48">
+                  <span className="text-white/30 pl-3 text-sm">@</span>
+                  <select
+                    value={selectedDomain}
+                    onChange={(e) => setSelectedDomain(e.target.value as TempMailDomain)}
+                    aria-label="Pilih domain email"
+                    className="w-full bg-transparent px-2 py-2.5 text-white outline-none text-sm font-mono cursor-pointer [&>option]:bg-gray-900 [&>option]:text-white"
+                  >
+                    {TEMPMAIL_DOMAINS.map((domain) => (
+                      <option key={domain} value={domain}>
+                        {domain}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
                 <button
                   onClick={handleOpenEmail}
                   disabled={!manualInput}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl"
-                  title="Buka"
+                  className="px-4 py-2.5 bg-blue-500/20 hover:bg-blue-500/30 border border-blue-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base font-medium"
+                  title="Akses email"
                 >
-                  🔓
+                  🔓 Akses Email
                 </button>
                 <button
                   onClick={handleCreateCustom}
                   disabled={!manualInput}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl"
-                  title="Buat"
+                  className="px-4 py-2.5 bg-green-500/20 hover:bg-green-500/30 border border-green-500/30 disabled:bg-white/5 disabled:border-white/10 disabled:cursor-not-allowed text-white rounded-xl text-sm sm:text-base font-medium"
+                  title="Buat email"
                 >
-                  ➕
+                  ➕ Buat Email
                 </button>
                 <button
                   onClick={handleGenerateRandom}
-                  className="flex-1 sm:flex-none px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-white rounded-xl"
-                  title="Random"
+                  className="px-4 py-2.5 bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/30 text-white rounded-xl text-sm sm:text-base font-medium"
+                  title="Buat email acak"
                 >
-                  🎲
+                  🎲 Buat Random
                 </button>
               </div>
             </div>
@@ -711,7 +740,7 @@ export default function Home() {
                 <>
                   <h3 className="text-lg font-semibold text-white mb-1">🔐 Buat Email Baru</h3>
                   <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono">{modalEmail}</span>
+                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">
@@ -764,7 +793,7 @@ export default function Home() {
                 <>
                   <h3 className="text-lg font-semibold text-white mb-1">🔓 Buka Email</h3>
                   <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono">{modalEmail}</span>
+                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">
@@ -820,7 +849,7 @@ export default function Home() {
                 <>
                   <h3 className="text-lg font-semibold text-white mb-1">🔑 Ganti Password</h3>
                   <p className="text-white/50 text-xs sm:text-sm mb-4">
-                    <span className="text-purple-400 font-mono">{modalEmail}</span>
+                    <span className="text-purple-400 font-mono break-all">{modalEmail}</span>
                   </p>
                   
                   <div className="space-y-3">

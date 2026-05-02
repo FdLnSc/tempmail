@@ -14,7 +14,7 @@ const geistMono = Geist_Mono({
 
 export const metadata: Metadata = {
   title: "TempMail FdLnStore",
-  description: "Email sementara gratis - fdlnstore.com",
+  description: "Email sementara gratis - fdlnstore.com dan fdlns.me",
   icons: {
     icon: "/logo.png",
   },
