@@ -1,4 +1,4 @@
-export const TEMPMAIL_DOMAINS = ['fdlnstore.com', 'fdlns.me'] as const
+export const TEMPMAIL_DOMAINS = ['fdlnstore.com', 'fdlns.me', 'fdlnstore.app'] as const
 
 export type TempMailDomain = (typeof TEMPMAIL_DOMAINS)[number]
 
